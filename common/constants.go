@@ -70,6 +70,10 @@ var TelegramOAuthEnabled = false
 var TurnstileCheckEnabled = false
 var RegisterEnabled = true
 
+// RegisterRequireInviteCode refuses self-registration unless the request carries
+// an aff code owned by an existing user. Set via REGISTER_REQUIRE_INVITE_CODE.
+var RegisterRequireInviteCode = false
+
 var EmailDomainRestrictionEnabled = false // 是否启用邮箱域名限制
 var EmailAliasRestrictionEnabled = false  // 是否启用邮箱别名限制
 var EmailDomainWhitelist = []string{
