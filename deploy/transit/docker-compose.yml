@@ -1,0 +1,111 @@
+services:
+  caddy:
+    image: caddy:2
+    container_name: transit-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - DOMAIN=${DOMAIN}
+      - ACME_EMAIL=${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - new-api
+    networks:
+      - transit
+
+  new-api:
+    # 本 fork 的镜像，由 .github/workflows/transit-image.yml 构建
+    image: ${TRANSIT_IMAGE:-ghcr.io/polarisxb/transit:latest}
+    container_name: transit-new-api
+    restart: always
+    command: --log-dir /app/logs
+    # 只暴露给 Caddy，不映射到宿主机端口
+    expose:
+      - "3000"
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - SQL_DSN=postgresql://newapi:${POSTGRES_PASSWORD}@postgres:5432/newapi
+      - REDIS_CONN_STRING=redis://:${REDIS_PASSWORD}@redis:6379
+      - SESSION_SECRET=${SESSION_SECRET}
+      - CRYPTO_SECRET=${CRYPTO_SECRET}
+      - SESSION_COOKIE_SECURE=true
+      - SESSION_COOKIE_TRUSTED_URL=https://${DOMAIN}
+      # 与下方 transit 网络的子网一致；Caddy 是唯一的反向代理
+      - TRUSTED_PROXIES=172.28.0.0/16
+      - TZ=${TZ:-Asia/Shanghai}
+      - NODE_NAME=transit-1
+      # fork 补丁：注册必须携带有效邀请码（?aff=），否则拒绝
+      - REGISTER_REQUIRE_INVITE_CODE=true
+      - ERROR_LOG_ENABLED=true
+      - BATCH_UPDATE_ENABLED=true
+      # Claude Code 长任务中 thinking 阶段可能几分钟不吐字，默认 120s 会误杀
+      - STREAMING_TIMEOUT=600
+      - RELAY_RESPONSE_HEADER_TIMEOUT=1800
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - transit
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: transit-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: newapi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: newapi
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - transit
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newapi -d newapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: transit-redis
+    restart: always
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - transit
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+volumes:
+  pg_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  transit:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

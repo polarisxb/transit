@@ -1,0 +1,12 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	# 不开 encode：API 流量是 JSON，压缩收益小，还可能让 SSE 被缓冲
+	reverse_proxy new-api:3000 {
+		# 流式响应逐块立刻透传，不等缓冲区满
+		flush_interval -1
+		header_up X-Real-IP {remote_host}
+	}
+}
