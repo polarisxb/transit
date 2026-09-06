@@ -42,14 +42,18 @@ nano .env              # 同时填 DOMAIN、ACME_EMAIL、TRANSIT_IMAGE
 
 chmod +x scripts/backup.sh
 docker compose up -d   # 镜像是公开的；只有改成私有后才需要先 docker login ghcr.io
-docker compose logs -f new-api   # 看到 "no user exists, create a root user" 即启动成功
+docker compose logs -f new-api   # 打印出监听地址、没有报错即启动成功
 ```
 
-浏览器打开 `https://你的域名`，初始管理员 `root` / `123456`。
+浏览器打开 `https://你的域名`，首次访问是**初始化向导**（new-api 已不再自动创建 `root/123456`）：
+
+- 设置管理员用户名（最多 12 个字符）和密码（至少 8 位）
+- **「自用模式」不要勾选**。它会让没有配置倍率的模型按默认价放行；收钱的站点应该拒绝价格未知的模型，宁可报错也不要乱扣费
+- 「演示站点」不要勾选
 
 ## 3. 首次登录后立刻做
 
-1. 右上角头像 → 个人设置：**改 root 密码**，有条件就绑 Passkey / 2FA
+1. 右上角头像 → 个人设置：有条件就给管理员绑 Passkey / 2FA
 2. 系统设置 → 通用设置：**服务器地址** 填 `https://你的域名`
 3. 系统设置 → 登录注册：保持「允许新用户注册」**开启**，关闭所有第三方登录（GitHub / Discord / LinuxDO / Telegram / OIDC / 微信）。compose 里已设 `REGISTER_REQUIRE_INVITE_CODE=true`，没有有效邀请码的注册请求会被后端拒绝，提示「本站仅限邀请注册」
 4. 支付网关设置 → **确认合规条款**。不确认的话兑换码功能是锁着的（我们不接在线支付，但要用兑换码给朋友充值）

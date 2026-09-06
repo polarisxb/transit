@@ -79,6 +79,13 @@ go test ./controller/ -run TestResolveInviter -count=1
 cd web && bun install && bun run build && cd ..
 go build -o new-api .
 REGISTER_REQUIRE_INVITE_CODE=true ./new-api --port 3000
+
+# 只联调后端接口时不必构建 19 万行前端：放一个占位文件满足 go:embed 即可
+# （web/dist 已被 gitignore；这样编出的二进制没有界面，不要拿去部署）
+mkdir -p web/dist && echo '<!doctype html>' > web/dist/index.html
+go build -o new-api . && REGISTER_REQUIRE_INVITE_CODE=true ./new-api --port 3210
+# 首次启动走 POST /api/setup 建管理员，登录返回 JWT，之后带 Authorization: Bearer <token>
+# 和 New-Api-User: <id> 调 /api/user/aff 取邀请码，再用 aff_code 字段调 /api/user/register 验证门禁
 ```
 
 上游的 `makefile` 里有 `dev`、`dev-web`、`dev-api` 目标，前端热更新开发用那个。
