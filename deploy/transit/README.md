@@ -23,7 +23,7 @@ Anthropic / OpenAI / Google 官方 API（或 Bedrock / Vertex / Azure）
 - 一台能直连上游 API 的 VPS（香港 / 日本 / 新加坡 / 美国），1 核 1G 起步够用，装好 Docker 与 Docker Compose v2
 - 一个域名，A 记录指向服务器公网 IP。**不要开 Cloudflare 橙云代理**：它对源站响应有 100 秒超时，Claude Code 一次长任务经常超过，表现为 502 后上下文丢失。只做 DNS（灰云）或直接用其他 DNS
 - 至少一个上游 Key：Anthropic Console、OpenAI Platform、Google AI Studio 三选一起步
-- fork 已推到 GitHub 且 `transit image (GHCR)` 工作流跑过一次，`ghcr.io/<你>/transit:latest` 已存在。镜像默认私有，服务器上需要先 `docker login ghcr.io`（用一个只有 `read:packages` 权限的 PAT），或者在 GitHub 的 Package 设置里把它改成 public
+- 镜像 `ghcr.io/polarisxb/transit:latest` 由 fork 的 `transit image (GHCR)` 工作流构建，随公开仓库一起是公开的，可匿名拉取，不需要 `docker login`。如果以后在 GitHub 的 Package 设置里改成私有，服务器上要先 `docker login ghcr.io`（用一个只有 `read:packages` 权限的 PAT）
 
 ## 2. 部署
 
@@ -41,8 +41,7 @@ openssl rand -hex 32   # CRYPTO_SECRET
 nano .env              # 同时填 DOMAIN、ACME_EMAIL、TRANSIT_IMAGE
 
 chmod +x scripts/backup.sh
-docker login ghcr.io   # 镜像私有时需要
-docker compose up -d
+docker compose up -d   # 镜像是公开的；只有改成私有后才需要先 docker login ghcr.io
 docker compose logs -f new-api   # 看到 "no user exists, create a root user" 即启动成功
 ```
 

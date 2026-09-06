@@ -59,7 +59,7 @@ git push -u origin transit
 推上去以后：
 
 1. 仓库 Settings → Actions：把上游自带的 `ci.yml`、`docker-build.yml`、`docker-image-branch.yml`、`electron-build.yml`、`release.yml`、`sync-release-to-gitcode.yml` 逐个 **Disable workflow**。它们需要 Docker Hub 等 secrets，会一直红。不要删文件，删了下次 rebase 会冲突。
-2. Actions 里确认 `transit image (GHCR)` 跑绿，产物在 `ghcr.io/<你>/transit:latest`。镜像默认私有，要么在 Package 设置里改 public，要么服务器上 `docker login ghcr.io`。
+2. Actions 里确认 `transit image (GHCR)` 跑绿，产物在 `ghcr.io/<你>/transit:latest`。用 `GITHUB_TOKEN` 从公开仓库推出来的包是公开的，可匿名拉取；若在 Package 设置里改成私有，服务器上就需要 `docker login ghcr.io`。
 3. 站点后台「系统设置 → 关于」里放上 fork 仓库链接。
 
 ## 许可证义务（AGPL-3.0 + 上游附加条款）
