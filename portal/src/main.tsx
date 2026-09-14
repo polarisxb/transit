@@ -13,6 +13,7 @@ import { InvitePage } from '@/pages/invite'
 import { KeysPage } from '@/pages/keys'
 import { LandingPage } from '@/pages/landing'
 import { OverviewPage } from '@/pages/overview'
+import { PricingPage } from '@/pages/pricing'
 import { RegisterPage } from '@/pages/register'
 import { SetupPage } from '@/pages/setup'
 import { SignInPage } from '@/pages/sign-in'
@@ -205,6 +206,7 @@ function Root() {
         <Route element={<RequireAuth />}>
           <Route path="/keys" element={<KeysPage />} />
           <Route path="/usage" element={<UsagePage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/invite" element={<InvitePage />} />
           <Route path="/setup" element={<SetupPage />} />

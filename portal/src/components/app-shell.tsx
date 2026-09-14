@@ -43,6 +43,16 @@ const NAV = [
     ),
   },
   {
+    to: '/pricing',
+    label: '模型',
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z" />
+        <path d="M12 12 4 7.5M12 12v9M12 12l8-4.5" />
+      </svg>
+    ),
+  },
+  {
     to: '/wallet',
     label: '钱包',
     icon: (

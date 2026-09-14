@@ -1,5 +1,5 @@
 import type { LoginSession } from './auth'
-import { request, unwrap } from './http'
+import { request, unwrap, type ApiResponse } from './http'
 
 // ---------------------------------------------------------------------------
 // Public
@@ -289,6 +289,39 @@ export interface QuotaDataItem {
   token_used?: number
   count?: number
   quota?: number
+}
+
+export interface PricingModel {
+  model_name: string
+  description?: string
+  owner_by?: string
+  vendor_id?: number
+  quota_type: number
+  model_ratio: number
+  model_price: number
+  completion_ratio: number
+  cache_ratio?: number | null
+  create_cache_ratio?: number | null
+  enable_groups?: string[]
+  supported_endpoint_types?: string[]
+  billing_expr?: string
+  billing_mode?: string
+}
+
+export interface PricingVendor {
+  id: number
+  name: string
+}
+
+export interface PricingResponse extends ApiResponse<PricingModel[]> {
+  group_ratio?: Record<string, number>
+  usable_group?: Record<string, string>
+  vendors?: PricingVendor[]
+  supported_endpoint?: Record<string, unknown>
+}
+
+export async function getPricing(): Promise<PricingResponse> {
+  return (await request<PricingModel[]>('/api/pricing')) as PricingResponse
 }
 
 export async function getQuotaDates(start: number, end: number) {

@@ -44,7 +44,7 @@
 	@portal {
 		path / /index.html /favicon.ico /logo.png
 		path /sign-in /sign-in/* /register /register/*
-		path /keys /keys/* /usage /usage/* /wallet /wallet/*
+		path /keys /keys/* /usage /usage/* /pricing /pricing/* /wallet /wallet/*
 		path /invite /invite/* /setup /setup/* /account /account/*
 		path /portal-assets /portal-assets/*
 	}

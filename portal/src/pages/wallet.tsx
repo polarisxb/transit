@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 
 import { Button, Empty, ErrorNote, Notice, PageHead, Pagination, Spinner } from '@/components/ui'
@@ -75,7 +76,12 @@ export function WalletPage() {
       <PageHead
         tag={`额度按上游官方价折算 · 1 USD = ¥${site.usdRate.toFixed(2)} 参考汇率`}
         title="钱包"
-        desc="余额不足时用兑换码充值。本站不接在线支付：转账给站长后领取兑换码，兑换即到账。"
+        desc={
+          <>
+            余额不足时用兑换码充值。本站不接在线支付：转账给站长后领取兑换码，兑换即到账。各模型单价在{' '}
+            <Link to="/pricing">模型</Link> 页。
+          </>
+        }
       />
 
       <div className="grid-split">
