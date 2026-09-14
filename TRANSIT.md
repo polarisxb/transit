@@ -19,7 +19,12 @@
 | # | 补丁 | 改动 | 为什么不直接配置 |
 |---|---|---|---|
 | 1 | 强制邀请码注册：`REGISTER_REQUIRE_INVITE_CODE=true` 时，注册请求必须携带属于现有用户的 `aff` 码，否则返回「本站仅限邀请注册」。覆盖密码注册、统一 OAuth 注册、微信注册三条路径 | `controller/invite.go`（新）、`controller/invite_test.go`（新）、`controller/{user,oauth,wechat}.go`、`common/{constants,init}.go`、`i18n/keys.go`、`i18n/locales/*.yaml`，共约 30 行 | 上游的 `aff` 码是可选返利码，没有「必填」开关 |
+| — | 用户门户 `portal/` | 全新目录，独立镜像 `transit-portal`，通过 Caddy 与 new-api 同源部署；只依赖 new-api REST 接口 | 不是补丁，是配套 |
+| — | 门户契约测试 | `controller/portal_contract_test.go`（新文件） | 锁住门户依赖的后台响应形状 |
+| — | `.dockerignore` 末尾两行 `/portal/node_modules`、`/portal/dist` | 上游文件。6 周内上游 0 次改动；本机 `docker build` 主镜像时避免把门户依赖送进构建上下文 | 见左 |
 | — | 部署套件 `deploy/transit/` 与 GHCR 构建工作流 `.github/workflows/transit-image.yml` | 全是新文件 | 不是补丁，是配套 |
+
+上游 `Dockerfile` **未修改**，与基线 tag 保持一致。门户构建在 `portal/Dockerfile`。
 
 ### 加补丁的纪律
 
@@ -27,6 +32,7 @@
 - 能新建文件就不改旧文件；能改后端就不碰前端（前端 19 万行、改动频繁，rebase 冲突大户）。
 - 用环境变量而不是后台选项接入新开关，避免碰 `model/option.go` 这个高频冲突文件。
 - 每个补丁附一个最小单测，rebase 后靠它确认补丁还活着。
+- 门户依赖的是 new-api 后台内部接口，不是公开 API；漂移由 `controller/portal_contract_test.go` 兜底。
 - 上游可能会收的功能（比如这个邀请码门禁）顺手提 PR；合入后本地补丁直接删。
 
 ## 跟上游升级
@@ -40,9 +46,12 @@ git rebase v1.0.0-rc.NN                        # 把补丁序列搬到新 tag �
 
 # 验证
 go build ./controller/... ./common/... ./i18n/... ./model/...
-go test ./controller/ -run TestResolveInviter -count=1
+go test ./controller/ -run 'TestResolveInviter|TestPortalContract' -count=1
+cd portal && pnpm typecheck && cd ..
+# 这三处有改动就对照检查 portal/src/lib/auth.ts 和 api.ts
+git diff v1.0.0-rc.<旧>..v1.0.0-rc.<新> --stat -- router/api-router.go web/src/lib/auth-session.ts web/src/lib/session-hint.ts
 
-git push --force-with-lease origin transit     # 触发 GHCR 重建
+git push --force-with-lease origin transit     # 触发 GHCR 重建（transit + transit-portal）
 ```
 
 然后按 `deploy/transit/README.md` 第 6 节在服务器上 `docker compose pull && up -d`。安全修复不等两周，随时跟。
@@ -59,7 +68,7 @@ git push -u origin transit
 推上去以后：
 
 1. 仓库 Settings → Actions：把上游自带的 `ci.yml`、`docker-build.yml`、`docker-image-branch.yml`、`electron-build.yml`、`release.yml`、`sync-release-to-gitcode.yml` 逐个 **Disable workflow**。它们需要 Docker Hub 等 secrets，会一直红。不要删文件，删了下次 rebase 会冲突。
-2. Actions 里确认 `transit image (GHCR)` 跑绿，产物在 `ghcr.io/<你>/transit:latest`。用 `GITHUB_TOKEN` 从公开仓库推出来的包是公开的，可匿名拉取；若在 Package 设置里改成私有，服务器上就需要 `docker login ghcr.io`。
+2. Actions 里确认 `transit image (GHCR)` 跑绿，产物是 `ghcr.io/<你>/transit:latest` 和 `ghcr.io/<你>/transit-portal:latest`。用 `GITHUB_TOKEN` 从公开仓库推出来的包是公开的，可匿名拉取；若在 Package 设置里改成私有，服务器上就需要 `docker login ghcr.io`。
 3. 站点后台「系统设置 → 关于」里放上 fork 仓库链接。
 
 ## 许可证义务（AGPL-3.0 + 上游附加条款）
@@ -73,7 +82,7 @@ git push -u origin transit
 ```bash
 # 后端（不含前端，改动后端逻辑时够用）
 go build ./controller/... ./common/... ./i18n/... ./model/...
-go test ./controller/ -run TestResolveInviter -count=1
+go test ./controller/ -run 'TestResolveInviter|TestPortalContract' -count=1
 
 # 完整可运行的二进制需要先构建前端（主包用 go:embed 嵌入 web/dist）
 cd web && bun install && bun run build && cd ..
@@ -84,8 +93,9 @@ REGISTER_REQUIRE_INVITE_CODE=true ./new-api --port 3000
 # （web/dist 已被 gitignore；这样编出的二进制没有界面，不要拿去部署）
 mkdir -p web/dist && echo '<!doctype html>' > web/dist/index.html
 go build -o new-api . && REGISTER_REQUIRE_INVITE_CODE=true ./new-api --port 3210
-# 首次启动走 POST /api/setup 建管理员，登录返回 JWT，之后带 Authorization: Bearer <token>
-# 和 New-Api-User: <id> 调 /api/user/aff 取邀请码，再用 aff_code 字段调 /api/user/register 验证门禁
+# 首次启动走 POST /api/setup 建管理员，登录返回 access_token 和 refresh cookie，之后带 Authorization: Bearer <token>
+# 调 /api/user/aff 取邀请码，再用 aff_code 字段调 /api/user/register 验证门禁
+# 门户：cd portal && pnpm dev（把 /api 代理到 3210）
 ```
 
 上游的 `makefile` 里有 `dev`、`dev-web`、`dev-api` 目标，前端热更新开发用那个。

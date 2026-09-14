@@ -1,6 +1,6 @@
 # transit 部署与运营手册
 
-小范围（团队 + 朋友、邀请制）的 AI API 网关。底座是 [new-api](https://github.com/QuantumNous/new-api) 的一个薄 fork：补丁只有「强制邀请码注册」一项，其余全是配置。fork 的维护约定见仓库根目录的 `TRANSIT.md`。
+小范围（团队 + 朋友、邀请制）的 AI API 网关。底座是 [new-api](https://github.com/QuantumNous/new-api) 的一个薄 fork：后端补丁一项 + 独立门户 + 契约测试，其余全是配置。fork 的维护约定见仓库根目录的 `TRANSIT.md`。
 
 ```
 朋友的浏览器（门户）          朋友的 Claude Code / Codex / SDK
@@ -84,7 +84,7 @@ https://api.example.com/register?aff=你的aff码
 
 门户「邀请」页会生成这条链接和二维码。把链接发给朋友即可。朋友注册后也有自己的 aff 码，可以再邀请人——谁邀请的谁负责，后台用户列表里能看到邀请关系。不想让某人继续邀请，暂时没有开关，但你能在用户列表里看到并删号。
 
-朋友进门户后到「接入」页选一把密钥，复制 Claude Code / Codex / SDK 配置即可，不必手改域名。
+朋友进门户后到「接入」页选一把密钥，复制 Claude Code / Codex / SDK 配置即可，不必手改域名。门户还提供模型价格页、忘记密码（依赖 SMTP）、自助绑定邮箱。
 
 ## 4. 后台运营配置清单
 
@@ -142,7 +142,7 @@ new-api 内置的模型倍率就是官方价。分组倍率是叠在官方价之
 
 ## 5. 客户端接入（发给朋友的）
 
-把 `api.example.com` 换成实际域名，`sk-xxx` 换成自己的令牌。
+这些配置门户「接入」页会按所选密钥自动生成，本节只是备份。把 `api.example.com` 换成实际域名，`sk-xxx` 换成自己的令牌。
 
 **Claude Code** — `~/.claude/settings.json`：
 
