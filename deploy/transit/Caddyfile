@@ -28,6 +28,8 @@
 
 # 用户门户 + 对外 API（和 refresh cookie 同 origin）
 {$DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000"
+
 	handle /robots.txt {
 		header Content-Type text/plain
 		respond "User-agent: *\nDisallow: /\n" 200
@@ -64,5 +66,6 @@
 
 # new-api 原生后台：初始化向导、渠道、兑换码。不要和门户共用主机名。
 {$CONSOLE_DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000"
 	import newapi_proxy
 }

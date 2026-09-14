@@ -72,6 +72,7 @@ docker compose logs -f new-api   # 打印出监听地址、没有报错即启动
 2. 系统设置 → 通用设置：**服务器地址** 填 `https://DOMAIN`（用户门户那个主机名，不要填 console）
 3. 系统设置 → 登录注册：保持「允许新用户注册」**开启**，关闭所有第三方登录（GitHub / Discord / LinuxDO / Telegram / OIDC / 微信）。compose 里已设 `REGISTER_REQUIRE_INVITE_CODE=true`，没有有效邀请码的注册请求会被后端拒绝，提示「本站仅限邀请注册」
 4. 支付网关设置 → **确认合规条款**。不确认的话兑换码功能是锁着的（我们不接在线支付，但要用兑换码给朋友充值）
+5. 系统设置 → SMTP：填服务商参数并发一封测试邮件。它支撑三件事：门户里的「余额不足提醒」、后端渠道故障/自动禁用的管理员通知、门户的找回密码。**「邮箱验证」开关保持关闭**（注册不需要邮箱）；SMTP 配好照样能发验证码和重置邮件——`SendEmailVerification` 不受 `EmailVerificationEnabled` 限制
 
 ### 邀请是怎么工作的
 
@@ -197,9 +198,10 @@ docker compose logs -f --tail=100 new-api
 
 ```
 30 4 * * * /opt/transit/scripts/backup.sh >> /opt/transit/logs/backup.log 2>&1
+0 5 * * * find /opt/transit/logs -name '*.log' -mtime +30 -delete
 ```
 
-建议再用 rclone 把 `backups/` 同步到对象存储，服务器挂了余额数据不能丢。
+异地备份：在 `.env` 里设 `BACKUP_RCLONE_REMOTE=remote:bucket/transit`（先在服务器配好 rclone），`backup.sh` 本地 dump 成功后会 `rclone copy` 过去。留空则只做本地备份。服务器挂了余额数据不能丢。
 
 **恢复**：
 

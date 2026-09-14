@@ -14,3 +14,10 @@ docker compose exec -T postgres pg_dump -U newapi -d newapi | gzip > "$out"
 find backups -name 'newapi_*.sql.gz' -mtime +14 -delete
 
 echo "$(date -Is) backup ok: $out ($(du -h "$out" | cut -f1))"
+
+# 可选：.env 里配置 BACKUP_RCLONE_REMOTE=remote:bucket/transit 后自动同步到对象存储
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+if [ -n "${BACKUP_RCLONE_REMOTE:-}" ]; then
+  rclone copy "$out" "$BACKUP_RCLONE_REMOTE"
+  echo "$(date -Is) synced to $BACKUP_RCLONE_REMOTE"
+fi
