@@ -92,6 +92,9 @@ export function SignInPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <span className="hint">
+                  <Link to="/forgot">忘记密码？</Link>
+                </span>
               </div>
             </>
           )}

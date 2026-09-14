@@ -14,7 +14,9 @@ import { KeysPage } from '@/pages/keys'
 import { LandingPage } from '@/pages/landing'
 import { OverviewPage } from '@/pages/overview'
 import { PricingPage } from '@/pages/pricing'
+import { ForgotPage } from '@/pages/forgot'
 import { RegisterPage } from '@/pages/register'
+import { ResetPage } from '@/pages/reset'
 import { SetupPage } from '@/pages/setup'
 import { SignInPage } from '@/pages/sign-in'
 import { UsagePage } from '@/pages/usage'
@@ -202,7 +204,9 @@ function Root() {
         <Route element={<GuestOnly />}>
           <Route path="/sign-in" element={<SignInPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot" element={<ForgotPage />} />
         </Route>
+        <Route path="/user/reset" element={<ResetPage />} />
         <Route element={<RequireAuth />}>
           <Route path="/keys" element={<KeysPage />} />
           <Route path="/usage" element={<UsagePage />} />

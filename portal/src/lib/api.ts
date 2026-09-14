@@ -47,6 +47,14 @@ export function register(payload: RegisterPayload) {
   return request('/api/user/register?turnstile=', { method: 'POST', body: payload, auth: false })
 }
 
+export function sendPasswordReset(email: string) {
+  return request('/api/reset_password', { auth: false, query: { email, turnstile: '' } })
+}
+
+export function resetPassword(email: string, token: string) {
+  return request<string>('/api/user/reset', { method: 'POST', body: { email, token }, auth: false })
+}
+
 // ---------------------------------------------------------------------------
 // Self
 // ---------------------------------------------------------------------------

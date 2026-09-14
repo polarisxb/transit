@@ -177,7 +177,13 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const site = useSite()
   const consoleOrigin = useConsoleOrigin()
   const loc = useLocation()
-  const title = loc.pathname.startsWith('/register') ? '注册' : '登录'
+  const title = loc.pathname.startsWith('/register')
+    ? '注册'
+    : loc.pathname.startsWith('/forgot')
+      ? '找回密码'
+      : loc.pathname.startsWith('/user/reset')
+        ? '重置密码'
+        : '登录'
 
   useEffect(() => {
     document.title = `${title} · ${site.name}`
