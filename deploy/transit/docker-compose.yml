@@ -9,13 +9,18 @@ services:
       - "443:443/udp"
     environment:
       - DOMAIN=${DOMAIN}
+      - CONSOLE_DOMAIN=${CONSOLE_DOMAIN}
       - ACME_EMAIL=${ACME_EMAIL}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - portal_static:/srv/portal:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - new-api
+      portal-assets:
+        condition: service_completed_successfully
+      new-api:
+        condition: service_healthy
     networks:
       - transit
 
@@ -37,7 +42,7 @@ services:
       - SESSION_SECRET=${SESSION_SECRET}
       - CRYPTO_SECRET=${CRYPTO_SECRET}
       - SESSION_COOKIE_SECURE=true
-      - SESSION_COOKIE_TRUSTED_URL=https://${DOMAIN}
+      - SESSION_COOKIE_TRUSTED_URL=https://${DOMAIN},https://${CONSOLE_DOMAIN}
       # 与下方 transit 网络的子网一致；Caddy 是唯一的反向代理
       - TRUSTED_PROXIES=172.28.0.0/16
       - TZ=${TZ:-Asia/Shanghai}
@@ -61,6 +66,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # 门户独立镜像。拷贝前先清空卷，避免旧 hash 资源堆积。
+  portal-assets:
+    image: ${TRANSIT_PORTAL_IMAGE:-ghcr.io/polarisxb/transit-portal:latest}
+    container_name: transit-portal-assets
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["set -e; test -f /opt/portal/index.html; mkdir -p /srv/portal; find /srv/portal -mindepth 1 -delete; cp -a /opt/portal/. /srv/portal/"]
+    volumes:
+      - portal_static:/srv/portal
+    networks:
+      - transit
+    restart: "no"
 
   postgres:
     image: postgres:16-alpine
@@ -102,6 +120,7 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
+  portal_static:
 
 networks:
   transit:

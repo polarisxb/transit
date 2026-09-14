@@ -2,11 +2,67 @@
 	email {$ACME_EMAIL}
 }
 
-{$DOMAIN} {
-	# 不开 encode：API 流量是 JSON，压缩收益小，还可能让 SSE 被缓冲
+(newapi_proxy) {
+	# 不开 encode：API 是 JSON / SSE，压缩收益小，还可能缓冲流式响应
 	reverse_proxy new-api:3000 {
-		# 流式响应逐块立刻透传，不等缓冲区满
 		flush_interval -1
 		header_up X-Real-IP {remote_host}
+		transport http {
+			dial_timeout 10s
+			read_timeout 30m
+			write_timeout 30m
+			response_header_timeout 30m
+		}
 	}
+}
+
+(portal_headers) {
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
+}
+
+# 用户门户 + 对外 API（和 refresh cookie 同 origin）
+{$DOMAIN} {
+	handle /robots.txt {
+		header Content-Type text/plain
+		respond "User-agent: *\nDisallow: /\n" 200
+	}
+
+	handle /portal-config.json {
+		header Content-Type application/json
+		header Cache-Control no-store
+		respond `{"consoleOrigin":"https://{$CONSOLE_DOMAIN}"}` 200
+	}
+
+	@portal {
+		path / /index.html /favicon.ico /logo.png
+		path /sign-in /sign-in/* /register /register/*
+		path /keys /keys/* /usage /usage/* /wallet /wallet/*
+		path /invite /invite/* /setup /setup/* /account /account/*
+		path /portal-assets /portal-assets/*
+	}
+
+	handle @portal {
+		import portal_headers
+		@hashed path /portal-assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		root * /srv/portal
+		encode gzip
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle {
+		import newapi_proxy
+	}
+}
+
+# new-api 原生后台：初始化向导、渠道、兑换码。不要和门户共用主机名。
+{$CONSOLE_DOMAIN} {
+	import newapi_proxy
 }

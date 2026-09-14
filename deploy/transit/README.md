@@ -3,15 +3,24 @@
 小范围（团队 + 朋友、邀请制）的 AI API 网关。底座是 [new-api](https://github.com/QuantumNous/new-api) 的一个薄 fork：补丁只有「强制邀请码注册」一项，其余全是配置。fork 的维护约定见仓库根目录的 `TRANSIT.md`。
 
 ```
-朋友的 Claude Code / Codex / SDK
-        │  https://api.example.com
+朋友的浏览器（门户）          朋友的 Claude Code / Codex / SDK
+        │                              │
+        │  https://api.example.com     │  https://api.example.com/v1
+        ▼                              ▼
+                     Caddy（自动 TLS）
+                    /                \
+           门户静态文件              new-api
+           （portal）                  │
+                                      ├──► Postgres（用户、余额、日志）
+                                      └──► Redis（缓存、限流）
+                                           │
+                                           ▼
+                         Anthropic / OpenAI / Google 官方 API
+
+管理员浏览器
+        │  https://console.example.com
         ▼
-   Caddy（自动 TLS）
-        ▼
-   new-api ──► Postgres（用户、余额、日志）
-        │  └──► Redis（缓存、限流）
-        ▼
-Anthropic / OpenAI / Google 官方 API（或 Bedrock / Vertex / Azure）
+   同一个 Caddy → 同一个 new-api（原生后台：初始化、渠道、兑换码）
 ```
 
 只走官方货源。不接订阅号池、不接逆向渠道。
@@ -21,9 +30,9 @@ Anthropic / OpenAI / Google 官方 API（或 Bedrock / Vertex / Azure）
 ## 1. 前置条件
 
 - 一台能直连上游 API 的 VPS（香港 / 日本 / 新加坡 / 美国），1 核 1G 起步够用，装好 Docker 与 Docker Compose v2
-- 一个域名，A 记录指向服务器公网 IP。**不要开 Cloudflare 橙云代理**：它对源站响应有 100 秒超时，Claude Code 一次长任务经常超过，表现为 502 后上下文丢失。只做 DNS（灰云）或直接用其他 DNS
+- **两个主机名**，A 记录都指向服务器公网 IP：一个给朋友（门户 + `/v1` API），一个给管理员（new-api 原生后台）。例如 `api.example.com` 和 `console.example.com`。**不要开 Cloudflare 橙云代理**：它对源站响应有 100 秒超时，Claude Code 一次长任务经常超过，表现为 502 后上下文丢失。只做 DNS（灰云）或直接用其他 DNS
 - 至少一个上游 Key：Anthropic Console、OpenAI Platform、Google AI Studio 三选一起步
-- 镜像 `ghcr.io/polarisxb/transit:latest` 由 fork 的 `transit image (GHCR)` 工作流构建，随公开仓库一起是公开的，可匿名拉取，不需要 `docker login`。如果以后在 GitHub 的 Package 设置里改成私有，服务器上要先 `docker login ghcr.io`（用一个只有 `read:packages` 权限的 PAT）
+- 两个镜像由 fork 的 `transit image (GHCR)` 工作流并行构建，随公开仓库一起是公开的，可匿名拉取，不需要 `docker login`：`ghcr.io/polarisxb/transit:latest`（new-api 后端）和 `ghcr.io/polarisxb/transit-portal:latest`（用户门户静态文件）。如果以后在 GitHub 的 Package 设置里改成私有，服务器上要先 `docker login ghcr.io`（用一个只有 `read:packages` 权限的 PAT）
 
 ## 2. 部署
 
@@ -38,23 +47,29 @@ openssl rand -hex 32   # POSTGRES_PASSWORD
 openssl rand -hex 32   # REDIS_PASSWORD
 openssl rand -hex 32   # SESSION_SECRET
 openssl rand -hex 32   # CRYPTO_SECRET
-nano .env              # 同时填 DOMAIN、ACME_EMAIL、TRANSIT_IMAGE
+nano .env              # 同时填 DOMAIN、CONSOLE_DOMAIN、ACME_EMAIL、TRANSIT_IMAGE
 
 chmod +x scripts/backup.sh
 docker compose up -d   # 镜像是公开的；只有改成私有后才需要先 docker login ghcr.io
 docker compose logs -f new-api   # 打印出监听地址、没有报错即启动成功
 ```
 
-浏览器打开 `https://你的域名`，首次访问是**初始化向导**（new-api 已不再自动创建 `root/123456`）：
+浏览器先打开 **`https://CONSOLE_DOMAIN`**（管理后台），首次访问是**初始化向导**（new-api 已不再自动创建 `root/123456`）：
 
 - 设置管理员用户名（最多 12 个字符）和密码（至少 8 位）
 - **「自用模式」不要勾选**。它会让没有配置倍率的模型按默认价放行；收钱的站点应该拒绝价格未知的模型，宁可报错也不要乱扣费
 - 「演示站点」不要勾选
 
+初始化完成后：
+
+- 朋友和你自己用门户：**`https://DOMAIN`**（登录、密钥、钱包、接入配置）
+- 你继续用后台：**`https://CONSOLE_DOMAIN`**（渠道、兑换码、分组、用户）
+- 两个主机名必须不同。门户占了 `/`、`/sign-in`、`/setup` 等路径，和管理后台叠在同一域名上会互相抢页面。
+
 ## 3. 首次登录后立刻做
 
 1. 右上角头像 → 个人设置：有条件就给管理员绑 Passkey / 2FA
-2. 系统设置 → 通用设置：**服务器地址** 填 `https://你的域名`
+2. 系统设置 → 通用设置：**服务器地址** 填 `https://DOMAIN`（用户门户那个主机名，不要填 console）
 3. 系统设置 → 登录注册：保持「允许新用户注册」**开启**，关闭所有第三方登录（GitHub / Discord / LinuxDO / Telegram / OIDC / 微信）。compose 里已设 `REGISTER_REQUIRE_INVITE_CODE=true`，没有有效邀请码的注册请求会被后端拒绝，提示「本站仅限邀请注册」
 4. 支付网关设置 → **确认合规条款**。不确认的话兑换码功能是锁着的（我们不接在线支付，但要用兑换码给朋友充值）
 
@@ -66,7 +81,9 @@ new-api 每个用户都有一个 `aff` 码（个人中心 → 邀请），注册
 https://api.example.com/register?aff=你的aff码
 ```
 
-把这个链接发给朋友即可。朋友注册后也有自己的 aff 码，可以再邀请人——谁邀请的谁负责，后台用户列表里能看到邀请关系。不想让某人继续邀请，暂时没有开关，但你能在用户列表里看到并删号。
+门户「邀请」页会生成这条链接和二维码。把链接发给朋友即可。朋友注册后也有自己的 aff 码，可以再邀请人——谁邀请的谁负责，后台用户列表里能看到邀请关系。不想让某人继续邀请，暂时没有开关，但你能在用户列表里看到并删号。
+
+朋友进门户后到「接入」页选一把密钥，复制 Claude Code / Codex / SDK 配置即可，不必手改域名。
 
 ## 4. 后台运营配置清单
 
@@ -192,7 +209,9 @@ gunzip -c backups/newapi_YYYY-MM-DD_HHMM.sql.gz | docker compose exec -T postgre
 docker compose start new-api
 ```
 
-**监控**：`docker compose ps` 看健康状态；想要告警就在别处跑一个 Uptime Kuma 探测 `https://域名/api/status`。
+**监控**：`docker compose ps` 看健康状态；想要告警就在别处跑一个 Uptime Kuma 探测 `https://DOMAIN/api/status`。
+
+门户有独立镜像 `ghcr.io/polarisxb/transit-portal`，静态文件在 `/opt/portal`，`portal-assets` 容器每次 `up` 先清空再拷到 Caddy 的卷。只改门户、没改 Go 时只重建门户镜像（几十秒，不用等 Go 构建），然后 `docker compose pull && up -d`。
 
 **日志**：new-api 的消费日志只存 token 数和费用，`content` 字段是「模型倍率 x，分组倍率 y」这类计费说明，不存对话内容。别去开任何会记录请求体的调试选项。
 
