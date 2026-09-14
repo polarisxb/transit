@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
@@ -13,14 +13,16 @@ import {
   listKeys,
   revealKey,
   setKeyStatus,
+  updateKey,
   type ApiKey,
   type ApiKeyInput,
 } from '@/lib/api'
 import { copyText } from '@/lib/clipboard'
-import { formatDate, formatQuota, formatRelative, fullKey, maskKey, startOfMonth, usdToQuota } from '@/lib/format'
+import { formatDate, formatQuota, formatRelative, fullKey, maskKey, quotaToUsd, startOfMonth, usdToQuota } from '@/lib/format'
 import { useSite } from '@/lib/site'
 
 const PAGE_SIZE = 20
+const KEEP_EXPIRY = -2
 const EXPIRY = [
   { label: '永不过期', days: 0 },
   { label: '30 天', days: 30 },
@@ -57,7 +59,7 @@ export function KeysPage() {
   const [page, setPage] = useState(1)
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('all')
-  const [creating, setCreating] = useState(false)
+  const [editor, setEditor] = useState<ApiKey | 'new' | null>(null)
   const [createdKey, setCreatedKey] = useState<{ name: string; key: string } | null>(null)
   const [revealed, setRevealed] = useState<Record<number, string>>({})
   const [pendingDelete, setPendingDelete] = useState<ApiKey | null>(null)
@@ -142,7 +144,7 @@ export function KeysPage() {
         title="密钥"
         desc="每把密钥独立计量、可单独停用。建议一台机器一把；跑脚本的密钥务必设额度上限。"
         actions={
-          <Button variant="primary" onClick={() => setCreating(true)}>
+          <Button variant="primary" onClick={() => setEditor('new')}>
             + 新建密钥
           </Button>
         }
@@ -169,7 +171,10 @@ export function KeysPage() {
           <div className="stat-sub">
             {need ? (
               <>
-                {need.name} · <Link to="/wallet">追加额度</Link>
+                {need.name} ·{' '}
+                <button type="button" className="linkish" onClick={() => setEditor(need)}>
+                  追加额度
+                </button>
               </>
             ) : (
               '额度用尽或过期的密钥会出现在这里'
@@ -293,6 +298,9 @@ export function KeysPage() {
                       <td>
                         <div className="actions">
                           <Link to={`/setup?key=${k.id}`}>配置</Link>
+                          <button type="button" className="linkish" onClick={() => setEditor(k)}>
+                            编辑
+                          </button>
                           <button type="button" className="linkish" onClick={() => toggle.mutate(k)}>
                             {k.status === 1 ? '停用' : '启用'}
                           </button>
@@ -318,11 +326,12 @@ export function KeysPage() {
         <div>密钥泄露了怎么办：直接删掉重建，成本为零。正在用这把密钥的客户端会立刻失效，其他密钥不受影响。</div>
       </div>
 
-      <CreateKeyDialog
-        open={creating}
-        onClose={() => setCreating(false)}
+      <KeyDialog
+        open={editor !== null}
+        initial={editor && editor !== 'new' ? editor : undefined}
+        onClose={() => setEditor(null)}
         onCreated={async (name) => {
-          setCreating(false)
+          setEditor(null)
           invalidate()
           try {
             const page1 = await listKeys(1, PAGE_SIZE)
@@ -331,6 +340,10 @@ export function KeysPage() {
           } catch {
             toast.success('密钥已创建。请到列表里点眼睛查看完整密钥。')
           }
+        }}
+        onUpdated={() => {
+          setEditor(null)
+          invalidate()
         }}
       />
 
@@ -381,16 +394,21 @@ export function KeysPage() {
   )
 }
 
-function CreateKeyDialog({
+function KeyDialog({
   open,
+  initial,
   onClose,
   onCreated,
+  onUpdated,
 }: {
   open: boolean
+  initial?: ApiKey
   onClose: () => void
   onCreated: (name: string) => void
+  onUpdated: () => void
 }) {
   const site = useSite()
+  const editing = Boolean(initial)
   const [name, setName] = useState('')
   const [unlimited, setUnlimited] = useState(true)
   const [usd, setUsd] = useState('10')
@@ -403,20 +421,20 @@ function CreateKeyDialog({
   const groups = useQuery({ queryKey: ['groups'], queryFn: getUserGroups, enabled: open })
   const available = useQuery({ queryKey: ['user-models'], queryFn: getUserModels, enabled: open && limitModels })
 
-  const create = useMutation({
-    mutationFn: (input: ApiKeyInput) => createKey(input),
-    onSuccess: (res, input) => {
-      if (!res.success) {
-        toast.error(res.message || '创建没成功')
-        return
-      }
-      reset()
-      onCreated(input.name)
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : '创建没成功'),
-  })
-
-  function reset() {
+  useEffect(() => {
+    if (!open) return
+    if (initial) {
+      const remainUsd = quotaToUsd(initial.remain_quota, site.quotaPerUnit)
+      setName(initial.name)
+      setUnlimited(initial.unlimited_quota)
+      setUsd(remainUsd === 0 ? '0' : String(Number(remainUsd.toFixed(6))))
+      setExpiryDays(KEEP_EXPIRY)
+      setAllowIps(initial.allow_ips || '')
+      setLimitModels(initial.model_limits_enabled)
+      setModels(initial.model_limits ? initial.model_limits.split(',').filter(Boolean) : [])
+      setGroup(initial.group || '')
+      return
+    }
     setName('')
     setUnlimited(true)
     setUsd('10')
@@ -425,12 +443,29 @@ function CreateKeyDialog({
     setLimitModels(false)
     setModels([])
     setGroup('')
-  }
+  }, [open, initial, site.quotaPerUnit])
+
+  const save = useMutation({
+    mutationFn: (input: ApiKeyInput & { id?: number }) => (input.id ? updateKey({ ...input, id: input.id }) : createKey(input)),
+    onSuccess: (res, input) => {
+      if (!res.success) {
+        toast.error(res.message || (editing ? '更新没成功' : '创建没成功'))
+        return
+      }
+      if (editing) {
+        toast.success('密钥已更新')
+        onUpdated()
+        return
+      }
+      onCreated(input.name)
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : editing ? '更新没成功' : '创建没成功'),
+  })
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     const amount = Number(usd)
-    if (!unlimited && (!Number.isFinite(amount) || amount <= 0)) {
+    if (!unlimited && (!Number.isFinite(amount) || amount < 0)) {
       toast.error('请输入有效的额度上限')
       return
     }
@@ -438,11 +473,22 @@ function CreateKeyDialog({
       toast.error('单把密钥额度不能超过 $1,000,000')
       return
     }
-    create.mutate({
+    if (!unlimited && !editing && amount <= 0) {
+      toast.error('请输入有效的额度上限')
+      return
+    }
+    const expiredTime =
+      editing && expiryDays === KEEP_EXPIRY
+        ? initial!.expired_time
+        : expiryDays === 0
+          ? -1
+          : Math.floor(Date.now() / 1000) + expiryDays * 86400
+    save.mutate({
+      ...(initial ? { id: initial.id } : {}),
       name: name.trim(),
       unlimited_quota: unlimited,
       remain_quota: unlimited ? 0 : usdToQuota(amount, site.quotaPerUnit),
-      expired_time: expiryDays === 0 ? -1 : Math.floor(Date.now() / 1000) + expiryDays * 86400,
+      expired_time: expiredTime,
       allow_ips: allowIps
         .split(/[\n,]/)
         .map((s) => s.trim())
@@ -460,18 +506,18 @@ function CreateKeyDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title="新建密钥"
-      desc="创建后只显示一次完整密钥，请立刻复制保存"
+      title={editing ? '编辑密钥' : '新建密钥'}
+      desc={editing ? '单独限额改的是这把密钥的剩余额度' : '创建后只显示一次完整密钥，请立刻复制保存'}
       footer={
         <>
           <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" type="submit" form="create-key" loading={create.isPending}>
-            创建密钥
+          <Button variant="primary" type="submit" form="key-form" loading={save.isPending}>
+            {editing ? '保存' : '创建密钥'}
           </Button>
         </>
       }
     >
-      <form id="create-key" onSubmit={onSubmit} className="form-grid">
+      <form id="key-form" onSubmit={onSubmit} className="form-grid">
         <div className="field">
           <label htmlFor="key-name">名称</label>
           <input
@@ -498,14 +544,33 @@ function CreateKeyDialog({
           </div>
           {!unlimited && (
             <div className="input-row">
-              <input className="input mono" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} aria-label="额度上限美元" />
+              <input
+                className="input mono"
+                inputMode="decimal"
+                value={usd}
+                onChange={(e) => setUsd(e.target.value)}
+                aria-label={editing ? '剩余额度美元' : '额度上限美元'}
+              />
             </div>
           )}
-          <span className="hint">挂机脚本、借给同事用的密钥建议单独限额，用完即停，不会拖垮整个账户。</span>
+          <span className="hint">
+            {editing
+              ? '单独限额表示把这把密钥的剩余额度调整为 $X；切回跟随账户则不再单独封顶。'
+              : '挂机脚本、借给同事用的密钥建议单独限额，用完即停，不会拖垮整个账户。'}
+          </span>
         </div>
         <div className="field">
           <label>有效期</label>
           <div className="choice-row">
+            {editing && (
+              <button
+                type="button"
+                className={`choice ${expiryDays === KEEP_EXPIRY ? 'on' : ''}`}
+                onClick={() => setExpiryDays(KEEP_EXPIRY)}
+              >
+                保持不变
+              </button>
+            )}
             {EXPIRY.map((p) => (
               <button
                 key={p.days}
@@ -513,7 +578,7 @@ function CreateKeyDialog({
                 className={`choice ${expiryDays === p.days ? 'on' : ''}`}
                 onClick={() => setExpiryDays(p.days)}
               >
-                {p.label}
+                {editing && p.days > 0 ? `从现在起 ${p.label}` : p.label}
               </button>
             ))}
           </div>
