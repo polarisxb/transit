@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { Button, CopyBtn, Empty, ErrorNote, Modal, Notice, OtpInput, PageHead, QrImage, Spinner } from '@/components/ui'
 import {
+  bindEmail,
   deleteLoginSession,
   deleteSelf,
   disable2FA,
@@ -15,6 +16,7 @@ import {
   getUserGroups,
   parseUserSetting,
   revokeOtherSessions,
+  sendEmailCode,
   setup2FA,
   updateSelf,
   updateUserSetting,
@@ -43,6 +45,10 @@ export function AccountPage() {
   const [otp, setOtp] = useState('')
   const [disableOpen, setDisableOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [bindOpen, setBindOpen] = useState(false)
+  const [bindEmailValue, setBindEmailValue] = useState('')
+  const [bindCode, setBindCode] = useState('')
+  const [sendingCode, setSendingCode] = useState(false)
 
   const u = self.data
   const setting = parseUserSetting(u?.setting)
@@ -145,6 +151,45 @@ export function AccountPage() {
     }
     toast.success('已保存')
     qc.invalidateQueries({ queryKey: ['self'] })
+  }
+
+  async function sendBindCode() {
+    const email = bindEmailValue.trim()
+    if (!email) {
+      toast.error('请先填写邮箱')
+      return
+    }
+    setSendingCode(true)
+    try {
+      const res = await sendEmailCode(email)
+      if (res.success) toast.success('验证码已发送，去邮箱看一眼')
+      else toast.error(res.message || '验证码没发出去')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '验证码没发出去')
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
+  async function confirmBindEmail() {
+    const email = bindEmailValue.trim()
+    if (!email || !bindCode.trim()) {
+      toast.error('邮箱和验证码都要填')
+      return
+    }
+    try {
+      const res = await bindEmail(email, bindCode.trim())
+      if (!res.success) {
+        toast.error(res.message || '绑定没成功')
+        return
+      }
+      toast.success('邮箱已绑定')
+      setBindOpen(false)
+      setBindCode('')
+      qc.invalidateQueries({ queryKey: ['self'] })
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '绑定没成功')
+    }
   }
 
   async function onLogout() {
@@ -254,6 +299,18 @@ export function AccountPage() {
                       <span>{u.email}</span>
                     </>
                   )}
+                  <span>·</span>
+                  <button
+                    type="button"
+                    className="linkish"
+                    onClick={() => {
+                      setBindEmailValue(u?.email || '')
+                      setBindCode('')
+                      setBindOpen(true)
+                    }}
+                  >
+                    {u?.email ? '更换邮箱' : '绑定邮箱'}
+                  </button>
                 </div>
               </>
             )}
@@ -340,7 +397,7 @@ export function AccountPage() {
                 <p>
                   {u?.email
                     ? `低于 $5 时发邮件到 ${u.email}。`
-                    : '账户没绑邮箱，打开也发不出去。先在管理员后台补邮箱。'}
+                    : '账户没绑邮箱，打开也发不出去。先绑定邮箱。'}
                 </p>
               </div>
               <button
@@ -457,6 +514,43 @@ export function AccountPage() {
             <pre className="code-view">{setup.backup.join('\n')}</pre>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={bindOpen}
+        onClose={() => setBindOpen(false)}
+        title={u?.email ? '更换邮箱' : '绑定邮箱'}
+        desc="先发验证码，再填邮箱里的 6 位数字"
+        footer={
+          <>
+            <Button onClick={() => setBindOpen(false)}>取消</Button>
+            <Button variant="primary" onClick={() => void confirmBindEmail()}>
+              确认绑定
+            </Button>
+          </>
+        }
+      >
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="bind-email">邮箱</label>
+            <div className="input-row">
+              <input
+                id="bind-email"
+                className="input"
+                type="email"
+                value={bindEmailValue}
+                onChange={(e) => setBindEmailValue(e.target.value)}
+              />
+              <Button size="sm" loading={sendingCode} onClick={() => void sendBindCode()}>
+                发送验证码
+              </Button>
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="bind-code">验证码</label>
+            <input id="bind-code" className="input mono" value={bindCode} onChange={(e) => setBindCode(e.target.value)} />
+          </div>
+        </div>
       </Modal>
 
       <Modal

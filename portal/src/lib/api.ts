@@ -55,6 +55,14 @@ export function resetPassword(email: string, token: string) {
   return request<string>('/api/user/reset', { method: 'POST', body: { email, token }, auth: false })
 }
 
+export function sendEmailCode(email: string) {
+  return request('/api/verification', { auth: false, query: { email, turnstile: '' } })
+}
+
+export function bindEmail(email: string, code: string) {
+  return request('/api/oauth/email/bind', { method: 'POST', body: { email, code } })
+}
+
 // ---------------------------------------------------------------------------
 // Self
 // ---------------------------------------------------------------------------
