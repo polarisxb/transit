@@ -64,7 +64,33 @@ docker compose logs -f new-api   # 打印出监听地址、没有报错即启动
 
 - 朋友和你自己用门户：**`https://DOMAIN`**（登录、密钥、钱包、接入配置）
 - 你继续用后台：**`https://CONSOLE_DOMAIN`**（渠道、兑换码、分组、用户）
-- 两个主机名必须不同。门户占了 `/`、`/sign-in`、`/setup` 等路径，和管理后台叠在同一域名上会互相抢页面。
+- 两个主机名必须不同。用户域名只把 API 前缀反代到 new-api，其余是门户；管理后台必须走 `CONSOLE_DOMAIN`，叠在同一主机名上会互相抢页面
+
+### 用户域名路由
+
+`Caddyfile` 里 `{$DOMAIN}` 只把下面这些前缀交给 new-api（从 `router/*.go` 枚举，不是凭记忆），其余一律门户静态文件 + `index.html`：
+
+| 前缀 | 来源 | 用途 |
+|---|---|---|
+| `/api` `/api/*` | `router/api-router.go` | 门户 REST、监控 `GET /api/status` |
+| `/v1` `/v1/*` | relay / video / task / HostProtocols | OpenAI 兼容、任务、视频、Responses |
+| `/v1beta` `/v1beta/*` | `router/relay-router.go` | Gemini |
+| `/mj` `/mj/*` | 同上 | Midjourney |
+| `/<一段>/mj`… | `router.Group("/:mode/mj")` | Midjourney 带 mode 的路径 |
+| `/pg` `/pg/*` | 同上 | playground |
+| `/dashboard` `/dashboard/*` | `router/dashboard.go` | OpenAI billing 兼容；`/v1/dashboard/...` 已落在 `/v1` |
+
+没有独立的 `/v2` 或顶层图片/文件站点。`{$CONSOLE_DOMAIN}` 仍然整站反代 new-api。
+
+内置任务协议都在 `/v1`。以后若启用自定义公开路径的 JS 插件（不在上表），要把前缀加进 `Caddyfile` 的 `@upstream_prefix`，否则客户端会拿到门户 HTML。
+
+**回滚**（某类客户端 404、又要临时露出后台 SPA 时）：把 `{$DOMAIN}` 改回「`@portal` 白名单走门户、其余 `import newapi_proxy`」。完整旧片段在 `Caddyfile` 文件末尾注释里。拷到服务器后：
+
+```bash
+cd /opt/transit
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+# reload 失败再用：docker compose up -d caddy
+```
 
 ## 3. 首次登录后立刻做
 

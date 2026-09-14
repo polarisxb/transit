@@ -22,7 +22,7 @@
 | — | 用户门户 `portal/` | 全新目录，独立镜像 `transit-portal`，通过 Caddy 与 new-api 同源部署；只依赖 new-api REST 接口 | 不是补丁，是配套 |
 | — | 门户契约测试 | `controller/portal_contract_test.go`（新文件） | 锁住门户依赖的后台响应形状 |
 | — | `.dockerignore` 末尾两行 `/portal/node_modules`、`/portal/dist` | 上游文件。6 周内上游 0 次改动；本机 `docker build` 主镜像时避免把门户依赖送进构建上下文 | 见左 |
-| — | 部署套件 `deploy/transit/` 与 GHCR 构建工作流 `.github/workflows/transit-image.yml` | 全是新文件 | 不是补丁，是配套 |
+| — | 部署套件 `deploy/transit/` 与 GHCR 构建工作流 `.github/workflows/transit-image.yml` | 全是新文件。用户域名只反代 `router/*.go` 里的 API 前缀（`/api` `/v1` `/v1beta` `/mj` `/pg` `/dashboard` 以及 `/<一段>/mj`），其余走门户；回滚写在 `deploy/transit/Caddyfile` 末尾和 `deploy/transit/README.md` | 不是补丁，是配套 |
 
 上游 `Dockerfile` **未修改**，与基线 tag 保持一致。门户构建在 `portal/Dockerfile`。
 

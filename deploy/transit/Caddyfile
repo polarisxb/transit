@@ -26,7 +26,22 @@
 	}
 }
 
-# 用户门户 + 对外 API（和 refresh cookie 同 origin）
+(portal_files) {
+	import portal_headers
+	@hashed path /portal-assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	root * /srv/portal
+	encode gzip
+	try_files {path} /index.html
+	file_server
+}
+
+# 用户门户 + 对外 API（和 refresh cookie 同 origin）。
+# 只把 router/*.go 里的 API 前缀交给 new-api，其余一律门户，避免 /login /console /about 露出后台 SPA。
+# 前缀来源：router/{api-router,relay-router,dashboard,video-router,task-router,task-plugin-protocol-router}.go
+# 没有 /v2、没有独立的图片/文件站点。HostProtocols 默认都在 /v1。
+# 自定义 JS 插件若挂了非 /v1 的公开路径，要把前缀加进 @upstream_prefix，否则客户端拿到门户 HTML。
+# path 与 path_regexp 不能写进同一个 matcher（同组是 AND），所以拆成两个 handle。
 {$DOMAIN} {
 	header Strict-Transport-Security "max-age=31536000"
 
@@ -41,26 +56,23 @@
 		respond `{"consoleOrigin":"https://{$CONSOLE_DOMAIN}"}` 200
 	}
 
-	@portal {
-		path / /index.html /favicon.ico /logo.png
-		path /sign-in /sign-in/* /register /register/* /forgot /forgot/* /user/reset /user/reset/*
-		path /keys /keys/* /usage /usage/* /pricing /pricing/* /wallet /wallet/*
-		path /invite /invite/* /setup /setup/* /account /account/*
-		path /portal-assets /portal-assets/*
+	@upstream_prefix {
+		path /api /api/* /v1 /v1/* /v1beta /v1beta/* /mj /mj/* /pg /pg/* /dashboard /dashboard/*
+	}
+	# Midjourney 还挂了 /:mode/mj（例如 /imagine/mj/...），只匹配「恰好一段 + /mj」
+	@upstream_mj_mode {
+		path_regexp ^/[^/]+/mj(/.*)?$
 	}
 
-	handle @portal {
-		import portal_headers
-		@hashed path /portal-assets/*
-		header @hashed Cache-Control "public, max-age=31536000, immutable"
-		root * /srv/portal
-		encode gzip
-		try_files {path} /index.html
-		file_server
+	handle @upstream_prefix {
+		import newapi_proxy
+	}
+	handle @upstream_mj_mode {
+		import newapi_proxy
 	}
 
 	handle {
-		import newapi_proxy
+		import portal_files
 	}
 }
 
@@ -69,3 +81,20 @@
 	header Strict-Transport-Security "max-age=31536000"
 	import newapi_proxy
 }
+
+# 回滚 {$DOMAIN}：删掉上面的 @upstream_* / portal_files 默认 handle，改回「门户白名单、其余反代」。
+# 然后：docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+#
+#	@portal {
+#		path / /index.html /favicon.ico /logo.png
+#		path /sign-in /sign-in/* /register /register/* /forgot /forgot/* /user/reset /user/reset/*
+#		path /keys /keys/* /usage /usage/* /pricing /pricing/* /wallet /wallet/*
+#		path /invite /invite/* /setup /setup/* /account /account/*
+#		path /portal-assets /portal-assets/*
+#	}
+#	handle @portal {
+#		import portal_files
+#	}
+#	handle {
+#		import newapi_proxy
+#	}
