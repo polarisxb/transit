@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>账户 · transit</title>
+<link rel="stylesheet" href="bento.css">
+<style>
+  .profile { display: flex; align-items: center; gap: 16px; }
+  .profile .avatar { width: 56px; height: 56px; font-size: 18px; }
+  .profile h2 { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+  .profile .meta { font-size: 12.5px; color: var(--ink-sub); margin-top: 3px; display: flex; gap: 8px; align-items: center; }
+  .session { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border-subtle); font-size: 13px; }
+  .session:first-child { border-top: none; padding-top: 0; }
+  .session b { font-weight: 600; display: block; }
+  .session small { color: var(--ink-tertiary); font-size: 12px; }
+  .danger-zone { border-color: rgba(255, 59, 48, 0.25); }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  <aside>
+    <a class="brand" href="overview.html"><div class="brand-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><b>transit</b></a>
+    <nav>
+      <a href="overview.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>总览</a>
+      <a href="keys.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.9-8.9M15 8l2.5 2.5"/></svg>密钥</a>
+      <a href="usage.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>用量</a>
+      <a href="wallet.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>钱包</a>
+      <a href="invite.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>邀请</a>
+      <a href="setup.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>接入</a>
+      <a href="account.html" class="nav-link active"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>账户</a>
+    </nav>
+    <a class="user-badge" href="account.html"><div class="avatar">XK</div><div class="user-meta"><b>XK Studio</b><small>friends · 成本价结算</small></div></a>
+  </aside>
+
+  <main>
+    <header class="header rise">
+      <div>
+        <div class="sub-tag"><span>2026 年 7 月 1 日加入 · 由 管理员 邀请</span></div>
+        <h1>账户</h1>
+        <p>个人资料、密码、登录设备和通知。</p>
+      </div>
+      <div class="btn-group"><button class="btn btn-ghost">退出登录</button></div>
+    </header>
+
+    <div class="card rise" style="--i:1; margin-bottom: 14px;">
+      <div class="profile">
+        <div class="avatar">XK</div>
+        <div style="flex:1">
+          <h2>XK Studio</h2>
+          <div class="meta"><span class="mono">@xk</span><span>·</span><span class="pill blue">friends · ×1.0</span><span>·</span><span>用户 ID 1</span></div>
+        </div>
+        <button class="btn btn-ghost btn-sm">修改显示名</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card static rise" style="--i:2">
+        <div class="card-top" style="margin-bottom: 14px;"><div><div class="card-title">修改密码</div><div class="card-desc">改完后其他设备需要重新登录</div></div></div>
+        <form class="form-grid" onsubmit="return false">
+          <div class="field"><label>当前密码</label><input class="input" type="password" value="••••••••••••" autocomplete="current-password"></div>
+          <div class="field"><label>新密码</label><input class="input" type="password" placeholder="至少 8 位" autocomplete="new-password"></div>
+          <div class="field"><label>确认新密码</label><input class="input" type="password" autocomplete="new-password"></div>
+          <div style="display:flex; justify-content:flex-end;"><button class="btn btn-primary">更新密码</button></div>
+        </form>
+      </div>
+
+      <div style="display:grid; gap:14px; align-content:start;">
+        <div class="card static rise" style="--i:3">
+          <div class="card-top" style="margin-bottom: 6px;"><div><div class="card-title">安全</div></div></div>
+          <div class="switch-row"><div><b>两步验证</b><p>登录时需要验证器 App 的动态码。</p></div><span class="toggle on"></span></div>
+          <div class="switch-row"><div><b>余额不足提醒</b><p>低于 $5 时发一封邮件到 xk@example.com。</p></div><span class="toggle on"></span></div>
+          <div class="switch-row"><div><b>记录请求来源 IP</b><p>用于排查异常调用，默认关闭。</p></div><span class="toggle"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card static rise" style="--i:4">
+      <div class="card-top" style="margin-bottom: 10px;"><div><div class="card-title">登录设备</div><div class="card-desc">3 个活跃会话</div></div><button class="btn btn-ghost btn-sm">退出其他所有设备</button></div>
+      <div class="session"><div><b>MacBook Pro · Safari <span class="pill green" style="margin-left:6px">当前</span></b><small>上海 · 114.88.xx.xx · 刚刚活跃</small></div></div>
+      <div class="session"><div><b>iPhone · Safari</b><small>上海 · 39.144.xx.xx · 2 小时前</small></div><a href="#" class="tert" style="font-size:12.5px">退出</a></div>
+      <div class="session"><div><b>Windows · Chrome</b><small>杭州 · 115.196.xx.xx · 3 天前</small></div><a href="#" class="tert" style="font-size:12.5px">退出</a></div>
+    </div>
+
+    <div class="card static danger-zone rise" style="--i:5; margin-top: 14px;">
+      <div class="card-top" style="margin-bottom: 0;">
+        <div><div class="card-title" style="color:var(--red)">注销账户</div><div class="card-desc">删除所有密钥与用量记录；剩余余额请先联系站长退回。</div></div>
+        <button class="btn btn-danger btn-sm">注销…</button>
+      </div>
+    </div>
+
+    <footer><span>transit · 零明文存储协议</span><span>Powered by <a href="#">New API</a></span></footer>
+  </main>
+</div>
+<script src="bento.js"></script>
+</body>
+</html>

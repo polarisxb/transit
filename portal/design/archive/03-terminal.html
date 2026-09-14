@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计稿 03 · 终端控制台 — transit</title>
+<style>
+  :root{
+    --bg:#070a09; --panel:#0b100e; --line:#173224; --line2:#1f4a33;
+    --fg:#c8e6d2; --dim:#6f9a82; --faint:#3e6650;
+    --green:#5cff8a; --amber:#ffcc66; --red:#ff6b6b; --cyan:#6fe3ff;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Code","SF Mono",Menlo,Consolas,"Noto Sans Mono CJK SC","Microsoft YaHei",monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font:14px/1.55 var(--mono);color:var(--fg);background:var(--bg);min-height:100vh;position:relative}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% -10%,rgba(92,255,138,.08),transparent 60%)}
+  a{color:inherit;text-decoration:none}
+  .g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)} .c{color:var(--cyan)} .d{color:var(--dim)} .f{color:var(--faint)}
+  .num{font-variant-numeric:tabular-nums}
+
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;border-bottom:1px solid var(--line);background:rgba(11,16,14,.9);position:sticky;top:0;z-index:2}
+  .prompt .cur{display:inline-block;width:8px;height:15px;background:var(--green);vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .tabs{display:flex;gap:4px}
+  .tabs a{padding:4px 10px;border:1px solid transparent;color:var(--dim)}
+  .tabs a b{color:var(--faint);font-weight:400;margin-right:6px}
+  .tabs a.on{border-color:var(--line2);color:var(--green);background:rgba(92,255,138,.06)}
+  .tabs a:hover{color:var(--fg)}
+
+  main{max-width:1120px;margin:0 auto;padding:24px 20px 40px}
+  .box{position:relative;border:1px solid var(--line);background:var(--panel);margin-top:20px}
+  .box > .t{position:absolute;top:-9px;left:12px;padding:0 8px;background:var(--bg);color:var(--dim);font-size:12px;letter-spacing:.08em}
+  .box > .t b{color:var(--green);font-weight:400}
+  .box > .tr{position:absolute;top:-9px;right:12px;padding:0 8px;background:var(--bg);color:var(--faint);font-size:12px}
+  .box .in{padding:18px 18px 16px}
+
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .head h1{margin:0;font-size:22px;font-weight:600;color:var(--fg)}
+  .head p{margin:6px 0 0;color:var(--dim);max-width:70ch}
+  .btn{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--line2);color:var(--fg);background:transparent}
+  .btn:hover{border-color:var(--green);color:var(--green)}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#03140a;font-weight:600}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);margin-top:24px;background:var(--panel)}
+  .stat{padding:14px 18px;border-right:1px solid var(--line)} .stat:last-child{border-right:0}
+  .stat .k{font-size:12px;color:var(--dim)} .stat .k::before{content:"$ ";color:var(--faint)}
+  .stat .v{font-size:26px;line-height:1.1;margin-top:6px;font-weight:600}
+  .stat .h{font-size:12px;color:var(--faint);margin-top:6px}
+
+  .two{display:grid;grid-template-columns:1fr 340px;gap:20px}
+  .spark{display:grid;grid-template-columns:repeat(14,1fr);gap:6px;height:150px;align-items:end;margin-top:6px}
+  .spark div{background:linear-gradient(180deg,var(--green),rgba(92,255,138,.35));box-shadow:0 0 12px rgba(92,255,138,.18)}
+  .spark div.hi{background:linear-gradient(180deg,var(--amber),rgba(255,204,102,.35));box-shadow:0 0 12px rgba(255,204,102,.25)}
+  .axis{display:grid;grid-template-columns:repeat(14,1fr);gap:6px;margin-top:8px;text-align:center;font-size:11px;color:var(--faint)}
+
+  .rows{margin:0;padding:0;list-style:none}
+  .rows li{display:grid;grid-template-columns:1fr auto;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .rows li:last-child{border-bottom:0}
+  .rows .meter{color:var(--faint);letter-spacing:-1px}
+  .rows .meter b{color:var(--green);font-weight:400}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 10px;color:var(--dim);font-weight:400;border-bottom:1px solid var(--line2)}
+  th::before{content:"# ";color:var(--faint)}
+  td{padding:9px 10px;border-bottom:1px dashed var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0} tbody tr:hover td{background:rgba(92,255,138,.04)}
+  .rt{text-align:right}
+  .st{display:inline-block;padding:0 6px;border:1px solid var(--line2);font-size:12px}
+  .st.on{color:var(--green);border-color:rgba(92,255,138,.4)} .st.off{color:var(--dim)} .st.bad{color:var(--red);border-color:rgba(255,107,107,.4)}
+  .ops{display:flex;gap:10px;justify-content:flex-end;color:var(--dim)} .ops span:hover{color:var(--green)}
+
+  pre{margin:0;padding:14px 16px;background:#050807;border:1px solid var(--line);font:13px/1.6 var(--mono);overflow:auto}
+  pre .k{color:var(--cyan)} pre .s{color:var(--amber)} pre .cm{color:var(--faint)}
+  .seltabs{display:flex;gap:2px;margin-bottom:10px;font-size:12px}
+  .seltabs span{padding:4px 10px;border:1px solid var(--line);color:var(--dim)} .seltabs span.on{color:var(--green);border-color:var(--line2);background:rgba(92,255,138,.06)}
+
+  .status{position:sticky;bottom:0;display:flex;justify-content:space-between;gap:16px;padding:6px 20px;background:var(--panel);border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+  .status .ok::before{content:"● ";color:var(--green)}
+
+  /* backwards, not both: the finished state must drop clip-path so box titles can overflow the border */
+  .in-anim{animation:type .3s steps(6) backwards;animation-delay:calc(var(--i,0)*70ms)}
+  @keyframes type{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+  @media (prefers-reduced-motion:reduce){.in-anim{animation:none}.prompt .cur{animation:none}}
+  @media (max-width:960px){.stats{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.two{grid-template-columns:1fr}.bar{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="prompt"><span class="g">xk@transit</span><span class="d">:</span><span class="c">~</span><span class="d">$</span> overview <span class="cur"></span></div>
+  <nav class="tabs">
+    <a class="on" href="#"><b>1</b>概览</a><a href="#"><b>2</b>密钥</a><a href="#"><b>3</b>用量</a><a href="#"><b>4</b>钱包</a><a href="#"><b>5</b>邀请</a><a href="#"><b>6</b>接入</a><a href="#"><b>7</b>账户</a>
+  </nav>
+  <div class="d">bal <span class="a num">$42.184</span> · friends ×1.0</div>
+</div>
+
+<main>
+  <div class="head in-anim">
+    <div><h1>&gt; 你好，XK</h1><p>余额按上游官方价折算为美元额度显示，实际扣费 = 官方价 × 分组倍率。本站不留存任何对话内容，只记 token 数。</p></div>
+    <div style="display:flex;gap:8px"><a class="btn primary" href="#">接入指南 →</a><a class="btn" href="#">管理密钥</a></div>
+  </div>
+
+  <div class="stats in-anim" style="--i:1">
+    <div class="stat"><div class="k">balance</div><div class="v a num">$42.184</div><div class="h">≈ ¥303.72</div></div>
+    <div class="stat"><div class="k">spent --today</div><div class="v num">$1.862</div><div class="h">12 rpm · 38.2k tpm</div></div>
+    <div class="stat"><div class="k">spent --total</div><div class="v num">$57.82</div><div class="h">1,284 requests</div></div>
+    <div class="stat"><div class="k">group</div><div class="v c">friends</div><div class="h">ratio x1.0 · cost price</div></div>
+  </div>
+
+  <div class="two">
+    <section class="box in-anim" style="--i:2"><span class="t">usage <b>--days 14</b></span><span class="tr">total $23.41</span>
+      <div class="in">
+        <div class="spark">
+          <div style="height:22%"></div><div style="height:35%"></div><div style="height:18%"></div><div style="height:60%"></div><div style="height:44%"></div><div style="height:8%"></div><div style="height:12%"></div>
+          <div style="height:71%"></div><div class="hi" style="height:100%"></div><div style="height:52%"></div><div style="height:63%"></div><div style="height:30%"></div><div style="height:47%"></div><div style="height:39%"></div>
+        </div>
+        <div class="axis"><span>08-24</span><span></span><span>08-26</span><span></span><span>08-28</span><span></span><span>08-30</span><span></span><span class="a">09-01</span><span></span><span>09-03</span><span></span><span>09-05</span><span></span></div>
+      </div>
+    </section>
+    <section class="box in-anim" style="--i:3"><span class="t">top <b>--by cost</b></span>
+      <div class="in"><ul class="rows">
+        <li><span>claude-opus-4.7</span><span class="num">$31.20</span></li>
+        <li class="meter"><span><b>████████████████████</b></span><span></span></li>
+        <li><span>gpt-5.5</span><span class="num">$14.62</span></li>
+        <li class="meter"><span><b>█████████</b>░░░░░░░░░░░</span><span></span></li>
+        <li><span>claude-sonnet-4.6</span><span class="num">$8.10</span></li>
+        <li class="meter"><span><b>█████</b>░░░░░░░░░░░░░░░</span><span></span></li>
+        <li><span>gemini-3.1-pro</span><span class="num">$2.41</span></li>
+        <li class="meter"><span><b>██</b>░░░░░░░░░░░░░░░░░░</span><span></span></li>
+        <li><span>deepseek-v4</span><span class="num">$0.93</span></li>
+        <li class="meter"><span><b>█</b>░░░░░░░░░░░░░░░░░░░</span><span></span></li>
+      </ul></div>
+    </section>
+  </div>
+
+  <section class="box in-anim" style="--i:4"><span class="t">keys <b>--list</b></span><span class="tr">4 total</span>
+    <div class="in" style="padding-top:20px">
+      <table>
+        <thead><tr><th>name</th><th>key</th><th>status</th><th class="rt">remain</th><th class="rt">used</th><th>expires</th><th>last used</th><th class="rt">ops</th></tr></thead>
+        <tbody>
+          <tr><td>MacBook · Claude Code</td><td class="d">sk-tr9k…8f2a</td><td><span class="st on">enabled</span></td><td class="rt d">∞</td><td class="rt num">$23.10</td><td class="d">never</td><td class="d">3m ago</td><td><div class="ops"><span>[cfg]</span><span>[off]</span><span class="r">[rm]</span></div></td></tr>
+          <tr><td>工作站 · Codex</td><td class="d">sk-tr2c…41be</td><td><span class="st on">enabled</span></td><td class="rt num">$31.40</td><td class="rt num">$18.60</td><td class="d">2026-12-31</td><td class="d">1d ago</td><td><div class="ops"><span>[cfg]</span><span>[off]</span><span class="r">[rm]</span></div></td></tr>
+          <tr><td>批处理脚本</td><td class="d">sk-trm7…c0d9</td><td><span class="st bad">exhausted</span></td><td class="rt num">$0.00</td><td class="rt num">$5.00</td><td class="d">2026-10-01</td><td class="d">6d ago</td><td><div class="ops"><span>[cfg]</span><span>[off]</span><span class="r">[rm]</span></div></td></tr>
+          <tr><td>Cherry Studio</td><td class="d">sk-trx1…77aa</td><td><span class="st off">disabled</span></td><td class="rt d">∞</td><td class="rt num">$0.42</td><td class="d">never</td><td class="d">12d ago</td><td><div class="ops"><span>[cfg]</span><span>[on]</span><span class="r">[rm]</span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="box in-anim" style="--i:5"><span class="t">setup <b>--key "MacBook · Claude Code"</b></span><span class="tr">[copy]</span>
+    <div class="in" style="padding-top:20px">
+      <div class="seltabs"><span class="on">claude-code</span><span>codex</span><span>openai-sdk</span><span>anthropic-sdk</span><span>cherry-studio</span></div>
+<pre><span class="cm"># ~/.claude/settings.json</span>
+{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.example.com"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k…8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>,
+    <span class="k">"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"</span>: <span class="s">"1"</span>
+  }
+}</pre>
+    </div>
+  </section>
+</main>
+
+<div class="status"><span class="ok">api.example.com · 99.9% · 214ms</span><span>powered by new-api v1.0.0-rc.33 · 仅限邀请</span></div>
+</body>
+</html>

@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>transit · Console</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card-surface: rgba(255, 255, 255, 0.72);
+    --card-hover: rgba(255, 255, 255, 0.92);
+    --border-light: rgba(255, 255, 255, 0.95);
+    --border-subtle: rgba(0, 0, 0, 0.05);
+
+    --ink: #1d1d1f;
+    --ink-sub: #6e6e73;
+    --ink-tertiary: #86868b;
+    --ink-faint: #d2d2d7;
+
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --accent-tint: rgba(0, 113, 227, 0.08);
+    --green: #34c759;
+    --orange: #ff9500;
+    --red: #ff3b30;
+
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+    --r-xl: 22px;
+    --r-lg: 14px;
+    --r-md: 8px;
+    --r-full: 999px;
+
+    --shadow-base: 0 2px 10px rgba(0, 0, 0, 0.03), 0 0 1px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 16px 36px -12px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* 顶部细腻视网膜级环境光 */
+  .bg-glow {
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1000px;
+    height: 500px;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(0, 113, 227, 0.07) 0%, rgba(245, 245, 247, 0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app-shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    min-height: 100vh;
+  }
+
+  /* macOS 原生侧边栏 */
+  aside {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(245, 245, 247, 0.65);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 28px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .brand-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--ink);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  .brand b {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  nav { display: flex; flex-direction: column; gap: 3px; }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 9px;
+    color: var(--ink-sub);
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.16s var(--ease);
+  }
+  .nav-link svg {
+    width: 17px;
+    height: 17px;
+    stroke: var(--ink-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+    transition: stroke 0.16s;
+  }
+  .nav-link:hover {
+    color: var(--ink);
+    background: rgba(0, 0, 0, 0.04);
+  }
+  .nav-link.active {
+    color: var(--ink);
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+  }
+  .nav-link.active svg { stroke: var(--accent); }
+
+  .user-badge {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: background 0.16s;
+  }
+  .user-badge:hover { background: rgba(0, 0, 0, 0.04); }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #e1e1e6;
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .user-meta b { font-size: 12.5px; font-weight: 600; display: block; line-height: 1.2; }
+  .user-meta small { font-size: 11px; color: var(--ink-tertiary); }
+
+  /* 主工作区 */
+  main {
+    max-width: 1060px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 44px 44px 72px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 32px;
+  }
+  .sub-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-tertiary);
+    margin-bottom: 8px;
+  }
+  .dot-ping {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+  }
+  .header p {
+    font-size: 14.5px;
+    color: var(--ink-sub);
+    margin-top: 5px;
+  }
+
+  .btn-group { display: flex; gap: 8px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 15px;
+    border-radius: var(--r-full);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.16s var(--ease);
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  .btn-primary:hover {
+    background: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--ink);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+  .btn-ghost:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  /* Bento 结构网格 */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  .grid-split { display: grid; grid-template-columns: 1.7fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* 物理光泽 Bento 卡片 */
+  .card {
+    position: relative;
+    background: var(--card-surface);
+    backdrop-filter: blur(28px) saturate(170%);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-base), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    border-radius: var(--r-xl);
+    padding: 22px 24px;
+    transition: transform 0.24s var(--ease), box-shadow 0.24s var(--ease), background 0.24s;
+    overflow: hidden;
+  }
+  .card:hover {
+    background: var(--card-hover);
+    box-shadow: var(--shadow-hover), inset 0 1px 1px #fff;
+    transform: translateY(-2px);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-tertiary);
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin: 8px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-sub {
+    font-size: 12px;
+    color: var(--ink-sub);
+  }
+  .stat-sub a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .stat-sub a:hover { text-decoration: underline; }
+
+  /* 头部与滑块控件 */
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+  }
+  .card-title { font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+  .card-desc { font-size: 12px; color: var(--ink-tertiary); margin-top: 2px; }
+
+  /* Apple 经典平滑缓动分段控件 */
+  .segmented {
+    position: relative;
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px;
+    border-radius: 9px;
+    isolation: isolate;
+  }
+  .segmented button {
+    position: relative;
+    z-index: 1;
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-sub);
+    cursor: pointer;
+    border-radius: 7px;
+    transition: color 0.18s;
+  }
+  .segmented button.active {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .segmented-thumb {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: 0;
+    background: #ffffff;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.24s var(--ease);
+    z-index: 0;
+  }
+
+  /* 柱状图 + Tooltip 浮动气泡 */
+  .chart-canvas {
+    height: 150px;
+    display: flex;
+    align-items: flex-end;
+    gap: 9px;
+    padding-top: 14px;
+  }
+  .col {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+  }
+  .col-fill {
+    width: 100%;
+    border-radius: 4px 4px 2px 2px;
+    background: rgba(0, 113, 227, 0.13);
+    transition: height 0.6s var(--ease), background 0.15s, transform 0.15s;
+    cursor: pointer;
+  }
+  .col:hover .col-fill {
+    background: var(--accent);
+    transform: scaleX(1.08);
+  }
+  .col-fill.active-max {
+    background: var(--ink);
+  }
+  .col-date {
+    font-size: 10.5px;
+    color: var(--ink-tertiary);
+    margin-top: 8px;
+    font-family: var(--font-mono);
+  }
+
+  /* Tooltip 气泡 */
+  .col::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(29, 29, 31, 0.95);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.16s var(--ease);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .col:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 精密模型列表 */
+  .model-flow {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .flow-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    margin-bottom: 5px;
+  }
+  .flow-meta code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 550;
+  }
+  .flow-meta span {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .track {
+    height: 5px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: var(--r-full);
+    overflow: hidden;
+  }
+  .track-bar {
+    height: 100%;
+    background: var(--ink);
+    border-radius: var(--r-full);
+    transition: width 0.8s var(--ease);
+  }
+
+  /* 极简表格 */
+  .table-box { padding: 0; }
+  .table-top { padding: 20px 24px 14px; display: flex; justify-content: space-between; align-items: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    padding: 10px 24px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-tertiary);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(0, 0, 0, 0.012);
+  }
+  td {
+    padding: 13px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--ink);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0, 0, 0, 0.015); }
+  
+  .badge-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge-dot::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .badge-dot.green::before { background: var(--green); box-shadow: 0 0 0 2.5px rgba(52, 199, 89, 0.2); }
+  .badge-dot.orange::before { background: var(--orange); box-shadow: 0 0 0 2.5px rgba(255, 149, 0, 0.2); }
+
+  .mono-pill {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.035);
+    padding: 3px 6px;
+    border-radius: 5px;
+    color: var(--ink-sub);
+  }
+  .actions { display: flex; gap: 12px; justify-content: flex-end; }
+  .actions a {
+    color: var(--ink-sub);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: color 0.14s;
+  }
+  .actions a:hover { color: var(--accent); }
+  .actions a.danger:hover { color: var(--red); }
+
+  /* 极简代码容器 */
+  .code-view {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-lg);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.65;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  .k { color: #d73a49; }
+  .s { color: #032f62; }
+  .c { color: #86868b; }
+
+  /* 流程小卡 */
+  .guide-flow { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .flow-step { display: flex; gap: 12px; }
+  .step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-content b { font-size: 13px; font-weight: 600; display: block; }
+  .step-content p { font-size: 12px; color: var(--ink-sub); margin-top: 2px; }
+
+  footer {
+    margin-top: 48px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-tertiary);
+  }
+  footer a { color: inherit; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; }
+    aside { display: none; }
+    .grid-4, .grid-split { grid-template-columns: 1fr; }
+    main { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  <!-- 侧边导航 -->
+  <aside>
+    <a class="brand" href="#">
+      <div class="brand-icon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <b>transit</b>
+    </a>
+
+    <nav>
+      <a href="#" class="nav-link active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        总览
+      </a>
+      <a href="#" class="nav-link">
+        <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.9-8.9M15 8l2.5 2.5"/></svg>
+        密钥
+      </a>
+      <a href="#" class="nav-link">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        用量
+      </a>
+      <a href="#" class="nav-link">
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        钱包
+      </a>
+    </nav>
+
+    <a class="user-badge" href="#">
+      <div class="avatar">XK</div>
+      <div class="user-meta">
+        <b>XK Studio</b>
+        <small>friends · 成本价结算</small>
+      </div>
+    </a>
+  </aside>
+
+  <!-- 工作区 -->
+  <main>
+    <header class="header">
+      <div>
+        <div class="sub-tag">
+          <span class="dot-ping"></span>
+          <span>9 月 6 日 · 服务正常响应 (214ms)</span>
+        </div>
+        <h1>下午好，XK</h1>
+        <p>今日已消耗 $1.86，配额储备充足。端到端零明文留存。</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-ghost">文档</button>
+        <button class="btn btn-primary">+ 新建密钥</button>
+      </div>
+    </header>
+
+    <!-- 顶部四栏 Bento -->
+    <div class="grid-4">
+      <div class="card">
+        <div class="stat-label">可用余额</div>
+        <div class="stat-num" data-count="42.18" data-prefix="$" style="color: var(--accent);">$42.18</div>
+        <div class="stat-sub">≈ ¥303.72 · <a href="#">快捷充值</a></div>
+      </div>
+      <div class="card">
+        <div class="stat-label">今日消费</div>
+        <div class="stat-num" data-count="1.86" data-prefix="$">$1.86</div>
+        <div class="stat-sub">38.2k tokens/min 吞吐</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">累计消耗</div>
+        <div class="stat-num" data-count="57.82" data-prefix="$">$57.82</div>
+        <div class="stat-sub">1,284 次调用请求</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">权限分组</div>
+        <div class="stat-num" style="font-size: 24px; line-height: 1.35;">Friends</div>
+        <div class="stat-sub">1.0× 无任何溢价倍率</div>
+      </div>
+    </div>
+
+    <!-- 趋势与模型比例 -->
+    <div class="grid-split">
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">14 天用量走势</div>
+            <div class="card-desc">合计 $23.41 · 峰值在 9/1 ($4.12)</div>
+          </div>
+          <div class="segmented" data-seg>
+            <button>7 天</button>
+            <button class="active">14 天</button>
+            <button>30 天</button>
+            <div class="segmented-thumb"></div>
+          </div>
+        </div>
+
+        <div class="chart-canvas">
+          <div class="col" data-tooltip="8/24 · $0.91"><div class="col-fill" style="height: 22%;"></div><span class="col-date">24</span></div>
+          <div class="col" data-tooltip="8/25 · $1.44"><div class="col-fill" style="height: 35%;"></div><span class="col-date">25</span></div>
+          <div class="col" data-tooltip="8/26 · $0.74"><div class="col-fill" style="height: 18%;"></div><span class="col-date">26</span></div>
+          <div class="col" data-tooltip="8/27 · $2.47"><div class="col-fill" style="height: 60%;"></div><span class="col-date">27</span></div>
+          <div class="col" data-tooltip="8/28 · $1.81"><div class="col-fill" style="height: 44%;"></div><span class="col-date">28</span></div>
+          <div class="col" data-tooltip="8/29 · $0.33"><div class="col-fill" style="height: 8%;"></div><span class="col-date">29</span></div>
+          <div class="col" data-tooltip="8/30 · $0.49"><div class="col-fill" style="height: 14%;"></div><span class="col-date">30</span></div>
+          <div class="col" data-tooltip="8/31 · $2.93"><div class="col-fill" style="height: 71%;"></div><span class="col-date">31</span></div>
+          <div class="col" data-tooltip="9/01 · $4.12"><div class="col-fill active-max" style="height: 100%;"></div><span class="col-date">01</span></div>
+          <div class="col" data-tooltip="9/02 · $2.14"><div class="col-fill" style="height: 52%;"></div><span class="col-date">02</span></div>
+          <div class="col" data-tooltip="9/03 · $2.60"><div class="col-fill" style="height: 63%;"></div><span class="col-date">03</span></div>
+          <div class="col" data-tooltip="9/04 · $1.24"><div class="col-fill" style="height: 30%;"></div><span class="col-date">04</span></div>
+          <div class="col" data-tooltip="9/05 · $1.94"><div class="col-fill" style="height: 47%;"></div><span class="col-date">05</span></div>
+          <div class="col" data-tooltip="9/06 · $1.61"><div class="col-fill" style="height: 39%;"></div><span class="col-date">06</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">模型消耗结构</div>
+            <div class="card-desc">Claude Opus 占比达 53%</div>
+          </div>
+        </div>
+
+        <ul class="model-flow">
+          <li>
+            <div class="flow-meta"><code>claude-opus-4.7</code><span>$31.20</span></div>
+            <div class="track"><div class="track-bar" style="width: 100%;"></div></div>
+          </li>
+          <li>
+            <div class="flow-meta"><code>gpt-5.5</code><span>$14.62</span></div>
+            <div class="track"><div class="track-bar" style="width: 47%;"></div></div>
+          </li>
+          <li>
+            <div class="flow-meta"><code>claude-sonnet-4.6</code><span>$8.10</span></div>
+            <div class="track"><div class="track-bar" style="width: 26%;"></div></div>
+          </li>
+          <li>
+            <div class="flow-meta"><code>gemini-3.1-pro</code><span>$2.41</span></div>
+            <div class="track"><div class="track-bar" style="width: 8%;"></div></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 表格 Bento -->
+    <div class="card table-box">
+      <div class="table-top">
+        <div>
+          <div class="card-title">密钥分配与熔断</div>
+          <div class="card-desc">独立配额监控与单机设备控制</div>
+        </div>
+        <button class="btn btn-ghost" style="height: 28px; font-size: 12px;">+ 分配新设备</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>应用场景 / 设备</th>
+            <th>密钥签名</th>
+            <th>运行状态</th>
+            <th style="text-align: right;">额度限制</th>
+            <th style="text-align: right;">当期消耗</th>
+            <th>最后请求</th>
+            <th style="text-align: right;">管理</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 600;">MacBook · Claude Code</td>
+            <td><span class="mono-pill">sk-tr9k…8f2a</span></td>
+            <td><span class="badge-dot green">正常运转</span></td>
+            <td style="text-align: right; color: var(--ink-tertiary);">不限</td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 500;">$23.10</td>
+            <td style="color: var(--ink-tertiary);">3 分钟前</td>
+            <td><div class="actions"><a href="#">配置</a><a href="#">停用</a><a href="#" class="danger">删除</a></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">工作站 · Codex</td>
+            <td><span class="mono-pill">sk-tr2c…41be</span></td>
+            <td><span class="badge-dot green">正常运转</span></td>
+            <td style="text-align: right; font-family: var(--font-mono);">$31.40</td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 500;">$18.60</td>
+            <td style="color: var(--ink-tertiary);">昨天</td>
+            <td><div class="actions"><a href="#">配置</a><a href="#">停用</a><a href="#" class="danger">删除</a></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">批处理脚本 (临时)</td>
+            <td><span class="mono-pill">sk-trm7…c0d9</span></td>
+            <td><span class="badge-dot orange">额度用尽</span></td>
+            <td style="text-align: right; font-family: var(--font-mono);">$0.00</td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 500;">$5.00</td>
+            <td style="color: var(--ink-tertiary);">6 天前</td>
+            <td><div class="actions"><a href="#">充值</a><a href="#" class="danger">删除</a></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 底部配置双栏 -->
+    <div class="grid-split" style="margin-top: 14px;">
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">快速配置</div>
+            <div class="card-desc">自动匹配主流开发环境</div>
+          </div>
+          <button class="btn btn-ghost" style="height: 28px; font-size: 12px;">拷贝配置</button>
+        </div>
+        <div class="segmented" data-seg style="margin-bottom: 12px;">
+          <button class="active">Claude Code</button>
+          <button>Codex</button>
+          <button>OpenAI API</button>
+          <div class="segmented-thumb"></div>
+        </div>
+        <div class="code-view">
+<span class="c">// ~/.claude/settings.json</span>
+{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.transit.local"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k…8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>
+  }
+}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">接入指引</div>
+            <div class="card-desc">极简三步，直连无需代理</div>
+          </div>
+        </div>
+        <ul class="guide-flow">
+          <li class="flow-step">
+            <span class="step-num">1</span>
+            <div class="step-content">
+              <b>签发设备密钥</b>
+              <p>为每台独立运行环境配置专用密钥，防止跨设备泄露。</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="step-num">2</span>
+            <div class="step-content">
+              <b>设置端点地址</b>
+              <p>复制左侧提供的内网/直连 Base URL 即可直接生效。</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="step-num">3</span>
+            <div class="step-content">
+              <b>实时观察吞吐</b>
+              <p>Token 用量和响应延迟将实时在控制台同步呈现。</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      <span>transit · 零明文存储协议</span>
+      <span>macOS Clean &amp; Industrial Bento</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // 1. Apple 原生级平滑滑块
+  document.querySelectorAll('[data-seg]').forEach(seg => {
+    const thumb = seg.querySelector('.segmented-thumb');
+    const update = () => {
+      const activeBtn = seg.querySelector('button.active');
+      if (activeBtn) {
+        thumb.style.left = activeBtn.offsetLeft + 'px';
+        thumb.style.width = activeBtn.offsetWidth + 'px';
+      }
+    };
+    seg.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        update();
+      });
+    });
+    update();
+    window.addEventListener('resize', update);
+  });
+
+  // 2. 润物细无声的数字滚动动效
+  const easeOutExpo = t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const prefix = el.dataset.prefix || '';
+    const decimals = (el.dataset.count.split('.')[1] || '').length;
+    let start = null;
+    const dur = 1100;
+    const step = time => {
+      if (!start) start = time;
+      const progress = Math.min((time - start) / dur, 1);
+      el.textContent = prefix + (target * easeOutExpo(progress)).toFixed(decimals);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+</script>
+</body>
+</html>

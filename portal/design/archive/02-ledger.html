@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计稿 02 · 纸面账本 — transit</title>
+<style>
+  :root{
+    --paper:#f4efe6; --paper2:#faf7f1; --ink:#1c1a17; --ink2:#4a443c; --muted:#7a716a; --rule:#d9d0c1; --rule2:#bfb4a2;
+    --accent:#c2410c; --accent-soft:#f3d9cb; --green:#2f6b4f; --red:#a8322a;
+    --serif:"Source Serif 4","Iowan Old Style","Palatino Linotype","Songti SC","Noto Serif CJK SC","STSong",Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--paper);min-height:100vh;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px);
+    background-size:6px 6px, 9px 9px; background-position:0 0, 3px 4px;}
+  .serif{font-family:var(--serif)} .num{font-family:var(--mono);font-variant-numeric:tabular-nums} code{font-family:var(--mono)}
+  .sc{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 40px;border-bottom:1px solid var(--rule)}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand .name{font-family:var(--serif);font-size:26px;letter-spacing:-.02em}
+  .brand .name::after{content:"";display:inline-block;width:8px;height:8px;margin-left:6px;background:var(--accent);vertical-align:middle}
+  nav{display:flex;gap:28px}
+  nav a{color:var(--ink2);text-decoration:none;font-size:14px;padding:6px 0;border-bottom:2px solid transparent}
+  nav a.on{color:var(--ink);border-color:var(--accent)}
+  .me{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink2)}
+  .me .bal{font-family:var(--serif);font-size:20px;color:var(--ink)}
+
+  main{max-width:1160px;margin:0 auto;padding:40px}
+  .masthead{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-bottom:24px;border-bottom:1px solid var(--ink)}
+  h1{font-family:var(--serif);font-weight:500;font-size:44px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 0}
+  .lede{margin:12px 0 0;max-width:56ch;color:var(--ink2);font-size:15px;line-height:1.6}
+  .btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);text-decoration:none;font-size:14px}
+  .btn.primary{background:var(--ink);color:var(--paper2)} .btn.sm{height:32px;padding:0 14px;font-size:13px}
+
+  .ledger{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--rule);margin-top:8px}
+  .ledger .cell{padding:22px 20px 22px 0;border-right:1px solid var(--rule)} .ledger .cell:last-child{border-right:0}
+  .ledger .cell + .cell{padding-left:20px}
+  .ledger .v{font-family:var(--serif);font-size:38px;line-height:1;margin-top:10px;letter-spacing:-.02em}
+  .ledger .h{margin-top:10px;font-size:13px;color:var(--muted)}
+  .accent{color:var(--accent)}
+
+  .cols{display:grid;grid-template-columns:8fr 4fr;gap:40px;margin-top:40px}
+  h2{font-family:var(--serif);font-weight:500;font-size:22px;margin:0}
+  .sect-h{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--rule2);margin-bottom:16px}
+
+  .bars{display:grid;grid-template-columns:repeat(14,1fr);gap:8px;height:190px;align-items:end;padding-bottom:8px;border-bottom:1px solid var(--rule2)}
+  .bars div{background:var(--ink);opacity:.85} .bars div:nth-child(9){background:var(--accent);opacity:1}
+  .axis{display:grid;grid-template-columns:repeat(14,1fr);gap:8px;margin-top:8px;text-align:center;font-size:11px;color:var(--muted)}
+
+  .models{list-style:none;margin:0;padding:0}
+  .models li{display:flex;align-items:baseline;gap:8px;padding:10px 0;border-bottom:1px dotted var(--rule2);font-size:14px}
+  .models li code{font-size:13px}
+  .models li .lead{flex:1;border-bottom:1px dotted var(--rule2);transform:translateY(-4px)}
+  .models li .amt{font-family:var(--serif);font-size:16px}
+
+  .callout{margin-top:32px;padding:18px 22px;border-left:3px solid var(--accent);background:var(--paper2);font-family:var(--serif);font-size:17px;line-height:1.6;color:var(--ink2)}
+  .callout b{color:var(--ink);font-weight:500}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+  th{text-align:left;padding:10px 12px 10px 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1px solid var(--ink)}
+  td{padding:14px 12px 14px 0;border-bottom:1px solid var(--rule);vertical-align:middle}
+  .r{text-align:right} .mut{color:var(--muted)} .amt{font-family:var(--serif);font-size:16px}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--rule2);color:var(--ink2)}
+  .pill.ok{background:#e4efe7;border-color:#c5dccd;color:var(--green)} .pill.bad{background:#f6dfdc;border-color:#ebc3be;color:var(--red)}
+  .ops a{color:var(--ink2);text-decoration:none;font-size:13px;margin-left:12px;border-bottom:1px solid var(--rule2)}
+
+  .setup{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px;padding-top:32px;border-top:1px solid var(--ink)}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:s}
+  .steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;padding:12px 0;border-bottom:1px dotted var(--rule2);font-size:15px;line-height:1.55;color:var(--ink2)}
+  .steps li::before{content:counter(s,decimal-leading-zero);font-family:var(--serif);font-size:24px;color:var(--accent);line-height:1}
+  pre{margin:0;padding:18px 20px;background:var(--ink);color:#e9e3d6;font:13px/1.65 var(--mono);border-radius:6px;overflow:auto}
+  pre .k{color:#f0b58c} pre .s{color:#b7d7a8} pre .c{color:#8f887c}
+  .tabs{display:flex;gap:18px;font-size:13px;margin-bottom:10px}.tabs span{color:var(--muted);padding-bottom:4px}.tabs span.on{color:var(--ink);border-bottom:2px solid var(--accent)}
+
+  footer{max-width:1160px;margin:0 auto;padding:24px 40px 40px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);border-top:1px solid var(--rule)}
+  footer a{color:inherit}
+  .fade{animation:fade .6s ease both;animation-delay:calc(var(--i,0)*100ms)}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.fade{animation:none}}
+  @media (max-width:960px){header.top{flex-wrap:wrap;padding:16px 20px}nav{gap:16px;overflow:auto}main{padding:24px 20px}.ledger{grid-template-columns:1fr 1fr}.cols,.setup{grid-template-columns:1fr}h1{font-size:34px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="name">transit</span><span class="sc">private gateway</span></div>
+  <nav><a class="on" href="#">概览</a><a href="#">密钥</a><a href="#">用量</a><a href="#">钱包</a><a href="#">邀请</a><a href="#">接入</a><a href="#">账户</a></nav>
+  <div class="me"><span>XK · friends</span><span class="bal">$42.18</span></div>
+</header>
+
+<main>
+  <section class="masthead fade">
+    <div><div class="sc">Overview · 2026 年 9 月 6 日</div><h1>账目清楚，<br>用多少付多少。</h1><p class="lede">余额按上游官方价折算为美元额度。friends 分组倍率 1.0，也就是成本价；本站不留存任何对话内容，只记 token 数。</p></div>
+    <div style="display:flex;gap:10px"><a class="btn primary" href="#">接入指南</a><a class="btn" href="#">管理密钥</a></div>
+  </section>
+
+  <section class="ledger fade" style="--i:1">
+    <div class="cell"><div class="sc">余额</div><div class="v accent">$42.18</div><div class="h">≈ ¥303.72，按 7.2 折算</div></div>
+    <div class="cell"><div class="sc">今日消费</div><div class="v">$1.86</div><div class="h">12 次/分 · 38.2k tokens/分</div></div>
+    <div class="cell"><div class="sc">累计消费</div><div class="v">$57.82</div><div class="h">1,284 次请求</div></div>
+    <div class="cell"><div class="sc">分组</div><div class="v">friends</div><div class="h">倍率 ×1.0 · 成本价</div></div>
+  </section>
+
+  <div class="cols">
+    <section class="fade" style="--i:2">
+      <div class="sect-h"><h2>最近十四天</h2><span class="num mut" style="font-size:13px">合计 $23.41</span></div>
+      <div class="bars">
+        <div style="height:22%"></div><div style="height:35%"></div><div style="height:18%"></div><div style="height:60%"></div><div style="height:44%"></div><div style="height:8%"></div><div style="height:12%"></div>
+        <div style="height:71%"></div><div style="height:100%"></div><div style="height:52%"></div><div style="height:63%"></div><div style="height:30%"></div><div style="height:47%"></div><div style="height:39%"></div>
+      </div>
+      <div class="axis num"><span>8/24</span><span></span><span>8/26</span><span></span><span>8/28</span><span></span><span>8/30</span><span></span><span style="color:var(--accent)">9/1</span><span></span><span>9/3</span><span></span><span>9/5</span><span></span></div>
+      <div class="callout">9 月 1 日花了 <b>$4.12</b>，是这两周最多的一天——大半来自 <b>claude-opus-4.7</b> 的一次长任务。</div>
+    </section>
+    <section class="fade" style="--i:3">
+      <div class="sect-h"><h2>模型排行</h2><span class="sc">14 天</span></div>
+      <ul class="models">
+        <li><code>claude-opus-4.7</code><span class="lead"></span><span class="amt">$31.20</span></li>
+        <li><code>gpt-5.5</code><span class="lead"></span><span class="amt">$14.62</span></li>
+        <li><code>claude-sonnet-4.6</code><span class="lead"></span><span class="amt">$8.10</span></li>
+        <li><code>gemini-3.1-pro</code><span class="lead"></span><span class="amt">$2.41</span></li>
+        <li><code>deepseek-v4</code><span class="lead"></span><span class="amt">$0.93</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="fade" style="--i:4;margin-top:48px">
+    <div class="sect-h"><h2>密钥</h2><a class="btn sm" href="#">新建密钥</a></div>
+    <table>
+      <thead><tr><th>名称</th><th>密钥</th><th>状态</th><th class="r">剩余</th><th class="r">已用</th><th>过期</th><th>最近使用</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>MacBook · Claude Code</td><td><code>sk-tr9k…8f2a</code></td><td><span class="pill ok">启用</span></td><td class="r mut">不限</td><td class="r amt">$23.10</td><td class="mut">永不</td><td class="mut">3 分钟前</td><td class="r ops"><a href="#">配置</a><a href="#">停用</a><a href="#">删除</a></td></tr>
+        <tr><td>工作站 · Codex</td><td><code>sk-tr2c…41be</code></td><td><span class="pill ok">启用</span></td><td class="r amt">$31.40</td><td class="r amt">$18.60</td><td class="mut">2026-12-31</td><td class="mut">昨天</td><td class="r ops"><a href="#">配置</a><a href="#">停用</a><a href="#">删除</a></td></tr>
+        <tr><td>批处理脚本</td><td><code>sk-trm7…c0d9</code></td><td><span class="pill bad">额度用尽</span></td><td class="r amt">$0.00</td><td class="r amt">$5.00</td><td class="mut">2026-10-01</td><td class="mut">6 天前</td><td class="r ops"><a href="#">配置</a><a href="#">停用</a><a href="#">删除</a></td></tr>
+        <tr><td>Cherry Studio</td><td><code>sk-trx1…77aa</code></td><td><span class="pill">已禁用</span></td><td class="r mut">不限</td><td class="r amt">$0.42</td><td class="mut">永不</td><td class="mut">12 天前</td><td class="r ops"><a href="#">配置</a><a href="#">启用</a><a href="#">删除</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="setup fade" style="--i:5">
+    <div>
+      <div class="sc">Setup</div><h2 style="margin-top:6px">三步接入</h2>
+      <ol class="steps" style="margin-top:12px">
+        <li><span>在「密钥」里为这台机器建一把密钥。跑脚本的密钥务必设额度上限。</span></li>
+        <li><span>选择你的工具，复制右侧配置粘贴进去。地址就是本站域名，不需要 VPN。</span></li>
+        <li><span>余额不足时到「钱包」用兑换码充值；有问题直接在群里喊我。</span></li>
+      </ol>
+    </div>
+    <div>
+      <div class="tabs"><span class="on">Claude Code</span><span>Codex CLI</span><span>OpenAI SDK</span><span>Anthropic SDK</span><span>Cherry Studio</span></div>
+<pre><span class="c">// ~/.claude/settings.json</span>
+{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.example.com"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k…8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>,
+    <span class="k">"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"</span>: <span class="s">"1"</span>
+  }
+}</pre>
+    </div>
+  </section>
+</main>
+<footer><span>transit · 仅限邀请</span><span>Powered by <a href="#">New API</a> v1.0.0-rc.33</span></footer>
+</body>
+</html>

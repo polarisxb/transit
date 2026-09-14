@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计稿 04 · 星空蓝 — transit</title>
+<style>
+  /* 常规后台布局（侧栏 + 内容区）；Apple 的 UI 语言与动效：大圆角卡片、渐变关键词、黑底代码卡、
+     带箭头文字链接、滚动渐入；星空铺满顶部向下溶入白色，侧栏与统计卡片是毛玻璃 */
+  :root{
+    --bg:#ffffff; --card:#ffffff; --fill:#f5f5f7; --fill2:#ececf0; --hair:#d2d2d7; --hair2:#e8e8ed;
+    --ink:#1d1d1f; --sub:#6e6e73; --tertiary:#86868b;
+    --night:#050d26; --deep:#0a1b4a; --navy:#112e78; --royal:#2453c9; --glow:#5b86f0;
+    --accent:var(--royal); --accent-h:#1b43a8; --accent-soft:#e6ecfb; --accent-tint:#f1f4fd; --accent-ink:#173a8f;
+    --link:#0066cc; --link-dark:#2997ff;
+    --green:#34c759; --red:#ff3b30;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,"Cascadia Code",monospace;
+    --r:20px; --r-sm:12px;
+    --ease:cubic-bezier(.28,.11,.32,1);
+    --shadow:0 1px 2px rgba(16,42,102,.05),0 12px 32px -16px rgba(16,42,102,.18);
+    --shadow-hover:0 2px 4px rgba(16,42,102,.06),0 22px 44px -18px rgba(16,42,102,.3);
+    --sky-h:520px;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--sans);font-size:15px;line-height:1.47;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;min-height:100vh}
+  a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
+  .num{font-variant-numeric:tabular-nums} code{font-family:var(--mono);font-size:.92em}
+  .sub{color:var(--sub)} .tert{color:var(--tertiary)}
+  .grad{background:linear-gradient(90deg,var(--royal),var(--glow));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .link{display:inline-flex;align-items:center;gap:2px;font-size:15px;color:var(--link);font-weight:500}
+  .link::after{content:"›";font-size:18px;line-height:1;margin-left:2px;transition:transform .2s var(--ease)}
+  .link:hover{text-decoration:none} .link:hover::after{transform:translateX(2px)}
+  .link.on-dark{color:var(--link-dark)}
+
+  /* ---------- 夜空 ---------- */
+  .sky{position:absolute;inset:0 0 auto 0;height:var(--sky-h);overflow:hidden;pointer-events:none;
+    background:
+      radial-gradient(90% 70% at 100% 0%,rgba(91,134,240,.55),transparent 60%),
+      radial-gradient(60% 60% at 15% 100%,rgba(36,83,201,.55),transparent 65%),
+      linear-gradient(160deg,var(--night) 0%,var(--deep) 45%,var(--navy) 75%,#1f4bb8 100%);
+    -webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 100%);mask-image:linear-gradient(to bottom,#000 62%,transparent 100%)}
+  .sky::before{content:"";position:absolute;inset:-20%;background:linear-gradient(112deg,transparent 38%,rgba(255,255,255,.05) 46%,rgba(140,170,255,.13) 50%,rgba(255,255,255,.05) 54%,transparent 62%);filter:blur(14px)}
+  .layer{position:absolute;inset:-4%;transition:transform .6s var(--ease);will-change:transform}
+  .layer i{position:absolute;width:var(--s,2px);height:var(--s,2px);border-radius:50%;background:#fff;opacity:var(--o,.6);box-shadow:0 0 calc(var(--s,2px)*2.5) rgba(200,215,255,.7);animation:twinkle var(--t,3s) ease-in-out infinite alternate;animation-delay:var(--dl,0s)}
+  .meteor{position:absolute;top:12%;left:58%;width:140px;height:1.5px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));border-radius:2px;transform:rotate(28deg);opacity:0;animation:meteor 11s linear infinite;animation-delay:3s;filter:drop-shadow(0 0 4px rgba(255,255,255,.8))}
+
+  /* ---------- shell ---------- */
+  .app{position:relative;display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:22px 14px;
+    background:rgba(255,255,255,.62);backdrop-filter:blur(30px) saturate(1.6);-webkit-backdrop-filter:blur(30px) saturate(1.6);
+    border-right:1px solid rgba(255,255,255,.55);box-shadow:1px 0 0 rgba(16,42,102,.06)}
+  .brand{display:flex;align-items:center;gap:10px;padding:2px 10px 18px;color:inherit;text-decoration:none}
+  .brand:hover{text-decoration:none}
+  .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--deep),var(--royal));display:grid;place-items:center;transition:transform .5s var(--ease);box-shadow:0 4px 10px -4px rgba(16,42,102,.6)}
+  .brand:hover .logo{transform:rotate(45deg)}
+  .logo svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round}
+  .brand b{font-size:17px;font-weight:600;letter-spacing:-.02em}
+  nav a{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:9px;color:var(--ink);font-size:14px;text-decoration:none;transition:background .2s var(--ease),color .2s}
+  nav a:hover{background:rgba(255,255,255,.55);text-decoration:none}
+  nav a.on{background:rgba(255,255,255,.85);color:var(--accent-ink);font-weight:500;box-shadow:0 1px 2px rgba(16,42,102,.08)}
+  nav svg{width:18px;height:18px;stroke:var(--sub);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+  nav a.on svg{stroke:var(--accent)}
+  .user{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;color:var(--ink);transition:background .2s}
+  .user:hover{background:rgba(29,29,31,.05);text-decoration:none}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--deep),var(--royal));color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600}
+  .user b{display:block;font-size:13px;font-weight:500}.user small{display:block;font-size:12px;color:var(--sub)}
+
+  main{position:relative;max-width:1100px;margin:0 auto;padding:52px 40px 56px}
+
+  /* ---------- header on the sky ---------- */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;color:#fff;padding:0 6px;margin-bottom:36px}
+  .eyebrow{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.62);margin-bottom:12px}
+  .live{display:inline-flex;align-items:center;gap:6px;padding:2px 9px 2px 7px;border-radius:980px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);color:rgba(255,255,255,.85);font-size:12px}
+  .live::before{content:"";width:6px;height:6px;border-radius:50%;background:#5cf2a0;box-shadow:0 0 8px #5cf2a0;animation:pulse 2.4s ease-in-out infinite}
+  h1{margin:0;font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+  h1 em{font-style:normal;background:linear-gradient(90deg,#dbe7ff 0%,#8fb2ff 55%,#c9b8ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .head p{margin:12px 0 0;font-size:17px;color:rgba(255,255,255,.72);max-width:48ch}
+  .head .ctas{display:flex;align-items:center;gap:22px;padding-bottom:6px}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 20px;border-radius:980px;background:var(--navy);color:#fff;font-size:14px;font-weight:500;text-decoration:none;border:0;cursor:pointer;white-space:nowrap;transition:background .2s,transform .15s var(--ease),box-shadow .2s}
+  .btn:hover{background:var(--deep);text-decoration:none;box-shadow:0 8px 20px -10px rgba(16,42,102,.6)}
+  .btn:active{transform:scale(.97)}
+  .btn.light{background:#fff;color:var(--navy)} .btn.light:hover{background:#eef2ff}
+  .btn.sm{height:32px;padding:0 14px;font-size:13px}
+
+  /* ---------- glass stat cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .glass{background:rgba(255,255,255,.78);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(255,255,255,.75);border-radius:var(--r);padding:22px 24px;box-shadow:0 24px 48px -24px rgba(5,13,38,.55),inset 0 1px 0 rgba(255,255,255,.8);transition:transform .35s var(--ease),box-shadow .35s var(--ease),background .35s}
+  .glass:hover{transform:translateY(-3px);background:rgba(255,255,255,.9);box-shadow:0 30px 56px -24px rgba(5,13,38,.6),inset 0 1px 0 #fff}
+  .cap{font-size:13px;color:var(--sub);font-weight:500}
+  .val{font-size:34px;font-weight:600;letter-spacing:-.025em;line-height:1.1;margin-top:10px}
+  .val.navy{color:var(--navy)}
+  .foot{margin-top:8px;font-size:13px;color:var(--tertiary)}
+  .foot a{font-weight:500}
+
+  /* ---------- content cards (apple ui language) ---------- */
+  .card{background:var(--card);border:1px solid var(--hair2);border-radius:var(--r);padding:28px 30px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .card.grey{background:var(--fill);border-color:transparent;box-shadow:none}
+  .card.dark{background:#0b0b0f;color:#fff;border-color:transparent}
+  .row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-top:14px}
+  .eye{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:-.01em}
+  .card.dark .eye{color:rgba(255,255,255,.55)}
+  .card h2{margin:4px 0 0;font-size:26px;font-weight:600;letter-spacing:-.025em;line-height:1.15}
+  .card.dark h2 em{font-style:normal;background:linear-gradient(90deg,#8fb2ff,#c9b8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .card .desc{margin:8px 0 0;font-size:14px;color:var(--sub)}
+  .card.dark .desc{color:rgba(255,255,255,.62)}
+  .card-h{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .card-h .seg,.card-h .pill,.card-h .btn{flex-shrink:0}
+  .card .more{margin-top:16px}
+
+  .seg{position:relative;display:inline-flex;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:3px;background:rgba(0,0,0,.06);border-radius:10px;isolation:isolate}
+  .seg::-webkit-scrollbar{display:none}
+  .card.dark .seg{background:rgba(255,255,255,.1)}
+  .seg span{position:relative;z-index:1;padding:4px 12px;border-radius:7px;font-size:13px;color:var(--sub);font-weight:500;cursor:pointer;transition:color .25s;white-space:nowrap}
+  .card.dark .seg span{color:rgba(255,255,255,.7)}
+  .seg span.on{color:var(--ink)} .card.dark .seg span.on{color:#fff}
+  .seg i{position:absolute;top:3px;bottom:3px;left:0;width:0;background:#fff;border-radius:7px;box-shadow:0 1px 3px rgba(0,0,0,.14);transition:left .3s var(--ease),width .3s var(--ease)}
+  .card.dark .seg i{background:rgba(255,255,255,.18)}
+
+  .bars{display:grid;grid-template-columns:repeat(14,1fr);gap:8px;height:180px;align-items:end;margin-top:26px}
+  .bars div{position:relative;background:rgba(36,83,201,.12);border-radius:7px 7px 3px 3px;transform-origin:bottom;transform:scaleY(0);transition:transform .9s var(--ease);transition-delay:calc(var(--d,0)*35ms)}
+  .in .bars div{transform:scaleY(1)}
+  .bars div::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,var(--glow),var(--royal));opacity:.55;transition:opacity .2s}
+  .bars div.hi::before{background:linear-gradient(180deg,var(--royal),var(--navy));opacity:1}
+  .bars div:hover::before{opacity:.9}
+  .bars div::after{content:attr(data-v);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);padding:4px 8px;border-radius:6px;background:var(--night);color:#fff;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s var(--ease)}
+  .bars div:hover::after{opacity:1;transform:translate(-50%,0)}
+  .axis{display:grid;grid-template-columns:repeat(14,1fr);gap:8px;margin-top:10px;text-align:center;font-size:11px;color:var(--tertiary)}
+  .legend{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--hair2);font-size:13px;color:var(--sub)}
+  .legend b{color:var(--ink);font-weight:600}
+
+  .models{list-style:none;margin:22px 0 0;padding:0}
+  .models li{padding:10px 0;border-top:1px solid var(--hair2)}
+  .models li:first-child{border-top:0;padding-top:0}
+  .models .line{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}
+  .models .line span:last-child{font-weight:600}
+  .models .track{height:6px;border-radius:3px;background:rgba(36,83,201,.1);margin-top:8px;overflow:hidden}
+  .models .track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--glow));border-radius:3px;transition:width 1s var(--ease);transition-delay:calc(300ms + var(--d,0)*80ms)}
+  .in .models .track i{width:var(--w)}
+
+  .section{margin-top:14px}
+  .table-wrap{margin:22px -30px -28px;border-top:1px solid var(--hair2);overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;padding:12px 30px;font-size:12px;font-weight:600;color:var(--sub);background:var(--fill);border-bottom:1px solid var(--hair2);white-space:nowrap}
+  th:not(:first-child){padding-left:16px} th:not(:last-child){padding-right:16px}
+  td{padding:14px 30px;border-bottom:1px solid var(--hair2);vertical-align:middle;white-space:nowrap;transition:background .2s}
+  td:not(:first-child){padding-left:16px} td:not(:last-child){padding-right:16px}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:var(--accent-tint)}
+  .r{text-align:right}
+  .dot{display:inline-flex;align-items:center;gap:7px;font-size:13px}
+  .dot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,.15)}
+  .dot.off::before{background:var(--hair);box-shadow:none} .dot.bad::before{background:var(--red);box-shadow:0 0 0 3px rgba(255,59,48,.15)}
+  .acts a{margin-left:14px;font-size:13px;font-weight:500;color:var(--link)}
+  .acts a.danger{color:var(--sub)} .acts a.danger:hover{color:var(--red)}
+
+  .steps{list-style:none;margin:18px 0 0;padding:0;counter-reset:s}
+  .steps li{counter-increment:s;display:grid;grid-template-columns:32px 1fr;gap:12px;padding:14px 0;font-size:14px;color:var(--sub);line-height:1.5;border-top:1px solid var(--hair2)}
+  .steps li::before{content:counter(s);width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--deep),var(--royal));color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+  .steps li b{color:var(--ink);font-weight:600}
+  pre{margin:18px 0 0;padding:16px 18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-sm);font:12.5px/1.7 var(--mono);color:#e7ecf7;overflow:auto}
+  pre .k{color:#8fb2ff} pre .s{color:#a7e0b6} pre .c{color:rgba(255,255,255,.4)}
+  .pill{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:980px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:500;white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);transition:background .2s}
+  .pill:hover{background:rgba(255,255,255,.2);text-decoration:none}
+
+  footer{max-width:1100px;margin:0 auto;padding:0 40px 40px;font-size:12px;color:var(--tertiary);display:flex;justify-content:space-between;gap:16px}
+  footer a{color:inherit}
+
+  /* ---------- motion ---------- */
+  .up{animation:up .8s var(--ease) both;animation-delay:calc(var(--i,0)*80ms)}
+  .io{opacity:0;transform:translateY(18px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+  .io.in{opacity:1;transform:none}
+  @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes twinkle{from{opacity:calc(var(--o,.6)*.2)}to{opacity:var(--o,.6)}}
+  @keyframes pulse{0%,100%{box-shadow:0 0 6px #5cf2a0}50%{box-shadow:0 0 14px #5cf2a0}}
+  @keyframes meteor{0%{opacity:0;transform:translate(0,0) rotate(28deg)}3%{opacity:1}12%{opacity:0;transform:translate(-320px,170px) rotate(28deg)}100%{opacity:0;transform:translate(-320px,170px) rotate(28deg)}}
+  @media (prefers-reduced-motion:reduce){.up,.layer i,.meteor,.live::before{animation:none}.io{opacity:1;transform:none;transition:none}.bars div{transform:none;transition:none}.models .track i{width:var(--w);transition:none}.glass,.btn,.seg i,.logo,.layer{transition:none}}
+  @media (max-width:960px){.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;align-items:center;gap:6px;padding:12px 14px;overflow:auto}nav{display:flex;gap:2px}.user{margin-top:0}.brand{padding:0 10px 0 0}main{padding:28px 20px}.head{flex-direction:column;align-items:flex-start}.cards{grid-template-columns:1fr 1fr}.row2{grid-template-columns:1fr}h1{font-size:32px}:root{--sky-h:640px}.table-wrap{margin:22px -20px -28px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sky">
+    <div class="layer" data-layer="1" data-depth="10"></div>
+    <div class="layer" data-layer="2" data-depth="22"></div>
+    <div class="meteor"></div>
+  </div>
+
+  <aside>
+    <a class="brand" href="#"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16M6.3 6.3l11.4 11.4M17.7 6.3 6.3 17.7"/></svg></span><b>transit</b></a>
+    <nav>
+      <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>概览</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.9-8.9M15 8l2.5 2.5M18 5l2 2"/></svg>密钥</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-8 4 5"/></svg>用量</a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 15h2"/></svg>钱包</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>邀请</a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>接入</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>账户</a>
+    </nav>
+    <a class="user" href="#"><span class="avatar">XK</span><span><b>XK</b><small>friends · 成本价</small></span></a>
+  </aside>
+
+  <div>
+    <main>
+      <div class="head up">
+        <div>
+          <div class="eyebrow"><span>9 月 6 日 · 星期六</span><span class="live">服务正常 · 214ms</span></div>
+          <h1>下午好，<em>XK</em>。</h1>
+          <p>今天花了 $1.86，余额还能用很久。本站不留存任何对话内容。</p>
+        </div>
+        <div class="ctas"><a class="btn light" href="#">接入指南</a><a class="link on-dark" href="#">新建密钥</a></div>
+      </div>
+
+      <div class="cards">
+        <div class="glass up" style="--i:1"><div class="cap">余额</div><div class="val num navy" data-count="42.18" data-prefix="$">$42.18</div><div class="foot">≈ ¥303.72 · <a href="#">充值</a></div></div>
+        <div class="glass up" style="--i:2"><div class="cap">今日消费</div><div class="val num" data-count="1.86" data-prefix="$">$1.86</div><div class="foot">12 次/分 · 38.2k tokens/分</div></div>
+        <div class="glass up" style="--i:3"><div class="cap">累计消费</div><div class="val num" data-count="57.82" data-prefix="$">$57.82</div><div class="foot">1,284 次请求</div></div>
+        <div class="glass up" style="--i:4"><div class="cap">分组</div><div class="val">friends</div><div class="foot">倍率 ×1.0，按成本价计费</div></div>
+      </div>
+
+      <div class="row2">
+        <section class="card io" data-io>
+          <div class="card-h">
+            <div><div class="eye">过去 14 天</div><h2>花了 <span class="grad">$23.41</span>。</h2><p class="desc">最高的一天是 9 月 1 日，$4.12，大半来自一次 Opus 长任务。</p></div>
+            <div class="seg" data-seg><span>7 天</span><span class="on">14 天</span><span>30 天</span><i></i></div>
+          </div>
+          <div class="bars" data-bars>
+            <div style="height:22%" data-v="8/24 · $0.91"></div><div style="height:35%" data-v="8/25 · $1.44"></div><div style="height:18%" data-v="8/26 · $0.74"></div><div style="height:60%" data-v="8/27 · $2.47"></div><div style="height:44%" data-v="8/28 · $1.81"></div><div style="height:8%" data-v="8/29 · $0.33"></div><div style="height:12%" data-v="8/30 · $0.49"></div>
+            <div style="height:71%" data-v="8/31 · $2.93"></div><div class="hi" style="height:100%" data-v="9/1 · $4.12"></div><div style="height:52%" data-v="9/2 · $2.14"></div><div style="height:63%" data-v="9/3 · $2.60"></div><div style="height:30%" data-v="9/4 · $1.24"></div><div style="height:47%" data-v="9/5 · $1.94"></div><div style="height:39%" data-v="9/6 · $1.61"></div>
+          </div>
+          <div class="axis num"><span>8/24</span><span></span><span>8/26</span><span></span><span>8/28</span><span></span><span>8/30</span><span></span><span>9/1</span><span></span><span>9/3</span><span></span><span>9/5</span><span></span></div>
+          <div class="legend"><span>14 天合计 <b class="num">$23.41</b></span><a class="link" href="#">查看逐笔用量</a></div>
+        </section>
+
+        <section class="card grey io" data-io>
+          <div class="eye">模型</div><h2>Opus 占了 <span class="grad">53%</span>。</h2><p class="desc">按 14 天费用排序。</p>
+          <ul class="models">
+            <li><div class="line"><code>claude-opus-4.7</code><span class="num">$31.20</span></div><div class="track"><i style="--w:100%;--d:0"></i></div></li>
+            <li><div class="line"><code>gpt-5.5</code><span class="num">$14.62</span></div><div class="track"><i style="--w:47%;--d:1"></i></div></li>
+            <li><div class="line"><code>claude-sonnet-4.6</code><span class="num">$8.10</span></div><div class="track"><i style="--w:26%;--d:2"></i></div></li>
+            <li><div class="line"><code>gemini-3.1-pro</code><span class="num">$2.41</span></div><div class="track"><i style="--w:8%;--d:3"></i></div></li>
+            <li><div class="line"><code>deepseek-v4</code><span class="num">$0.93</span></div><div class="track"><i style="--w:3%;--d:4"></i></div></li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="card section io" data-io>
+        <div class="card-h">
+          <div><div class="eye">密钥</div><h2>一台机器一把，<span class="grad">各管各的</span>。</h2><p class="desc">每把密钥独立计量、可单独停用；跑脚本的密钥设个额度上限，用完即停。</p></div>
+          <a class="btn sm" href="#">新建密钥</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>名称</th><th>密钥</th><th>状态</th><th class="r">剩余额度</th><th class="r">已用</th><th>过期</th><th>最近使用</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>MacBook · Claude Code</td><td><code>sk-tr9k…8f2a</code></td><td><span class="dot">启用</span></td><td class="r sub">不限</td><td class="r num">$23.10</td><td class="sub">永不</td><td class="sub">3 分钟前</td><td class="r acts"><a href="#">配置</a><a href="#">停用</a><a class="danger" href="#">删除</a></td></tr>
+              <tr><td>工作站 · Codex</td><td><code>sk-tr2c…41be</code></td><td><span class="dot">启用</span></td><td class="r num">$31.40</td><td class="r num">$18.60</td><td class="sub">2026-12-31</td><td class="sub">昨天</td><td class="r acts"><a href="#">配置</a><a href="#">停用</a><a class="danger" href="#">删除</a></td></tr>
+              <tr><td>批处理脚本</td><td><code>sk-trm7…c0d9</code></td><td><span class="dot bad">额度用尽</span></td><td class="r num">$0.00</td><td class="r num">$5.00</td><td class="sub">2026-10-01</td><td class="sub">6 天前</td><td class="r acts"><a href="#">配置</a><a href="#">停用</a><a class="danger" href="#">删除</a></td></tr>
+              <tr><td>Cherry Studio</td><td><code>sk-trx1…77aa</code></td><td><span class="dot off">已停用</span></td><td class="r sub">不限</td><td class="r num">$0.42</td><td class="sub">永不</td><td class="sub">12 天前</td><td class="r acts"><a href="#">配置</a><a href="#">启用</a><a class="danger" href="#">删除</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="row2">
+        <section class="card dark io" data-io>
+          <div class="card-h">
+            <div><div class="eye">配置 · MacBook · Claude Code</div><h2>复制，粘贴，<em>开始</em>。</h2></div>
+            <a class="pill" href="#">拷贝</a>
+          </div>
+          <div class="seg" data-seg style="margin-top:20px"><span class="on">Claude Code</span><span>Codex</span><span>OpenAI SDK</span><span>Anthropic SDK</span><span>Cherry Studio</span><i></i></div>
+<pre><span class="c">// ~/.claude/settings.json</span>
+{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.example.com"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k…8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>,
+    <span class="k">"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"</span>: <span class="s">"1"</span>
+  }
+}</pre>
+        </section>
+
+        <section class="card grey io" data-io>
+          <div class="eye">接入</div><h2>三步，<span class="grad">五分钟</span>。</h2><p class="desc">地址就是本站域名，不需要 VPN。</p>
+          <ol class="steps">
+            <li><span><b>创建密钥。</b>在「密钥」里为这台机器新建一把。</span></li>
+            <li><span><b>粘贴配置。</b>左侧选择工具，复制配置到对应文件即可生效。</span></li>
+            <li><span><b>按需充值。</b>余额不足时到「钱包」用兑换码充值。</span></li>
+          </ol>
+        </section>
+      </div>
+    </main>
+    <footer><span>transit · 仅限邀请 · 不留存对话内容</span><span>Powered by <a href="#">New API</a> v1.0.0-rc.33</span></footer>
+  </div>
+</div>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 星空：两层星点 + 鼠标视差
+  const layers = [...document.querySelectorAll('[data-layer]')];
+  layers.forEach(layer => {
+    const near = layer.dataset.layer === '2';
+    const count = near ? 70 : 130;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('i');
+      const size = near ? (Math.random() < .2 ? 3 : 2) : (Math.random() < .5 ? 1.4 : 1);
+      s.style.left = (Math.random() * 100).toFixed(2) + '%';
+      s.style.top = (Math.random() * 100).toFixed(2) + '%';
+      s.style.setProperty('--s', size + 'px');
+      s.style.setProperty('--o', (near ? 0.45 + Math.random() * 0.5 : 0.2 + Math.random() * 0.45).toFixed(2));
+      s.style.setProperty('--t', (2.5 + Math.random() * 4).toFixed(2) + 's');
+      s.style.setProperty('--dl', (-Math.random() * 7).toFixed(2) + 's');
+      frag.appendChild(s);
+    }
+    layer.appendChild(frag);
+  });
+  if (!reduce) {
+    addEventListener('pointermove', e => {
+      const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+      layers.forEach(l => {
+        const d = Number(l.dataset.depth);
+        l.style.transform = `translate(${(-x * d).toFixed(1)}px, ${(-y * d).toFixed(1)}px)`;
+      });
+    }, { passive: true });
+  }
+
+  // 滚动渐入：进入视口 15% 触发一次，柱状图与进度条随之生长
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: .15 });
+  document.querySelectorAll('[data-io]').forEach(el => io.observe(el));
+
+  // 分段控件滑块
+  document.querySelectorAll('[data-seg]').forEach(seg => {
+    const thumb = seg.querySelector('i');
+    const place = () => { const on = seg.querySelector('span.on'); thumb.style.left = on.offsetLeft + 'px'; thumb.style.width = on.offsetWidth + 'px'; };
+    seg.querySelectorAll('span').forEach(s => s.addEventListener('click', () => { seg.querySelector('span.on').classList.remove('on'); s.classList.add('on'); place(); }));
+    place(); addEventListener('resize', place);
+  });
+
+  document.querySelectorAll('[data-bars] > div').forEach((b, i) => b.style.setProperty('--d', i));
+
+  // 数字滚动
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count), prefix = el.dataset.prefix || '';
+    const decimals = (el.dataset.count.split('.')[1] || '').length;
+    if (reduce) return;
+    const start = performance.now() + 350, dur = 1000;
+    const tick = now => {
+      const t = Math.min(1, Math.max(0, (now - start) / dur));
+      el.textContent = prefix + (target * ease(t)).toFixed(decimals);
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    el.textContent = prefix + (0).toFixed(decimals);
+    requestAnimationFrame(tick);
+  });
+})();
+</script>
+</body>
+</html>

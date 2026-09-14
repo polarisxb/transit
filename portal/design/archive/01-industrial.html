@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计稿 01 · 工业仪表盘 — transit</title>
+<style>
+  :root{
+    --bg:#0d0f12; --surface:#14171c; --raised:#1a1e25; --line:#262b33; --line2:#343b46;
+    --ink:#e6e8eb; --muted:#8b93a1; --faint:#5b6472;
+    --accent:#ffb400; --accent-ink:#1a1200; --teal:#2de1c2; --ok:#3ddc84; --danger:#ff5c5c;
+    --mono: ui-monospace,"JetBrains Mono","Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{
+    font-family:var(--sans); color:var(--ink); background:var(--bg);
+    background-image:repeating-linear-gradient(-45deg,transparent 0 14px,rgba(255,255,255,.025) 14px 15px);
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  .num,code{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+  /* shell */
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);background:rgba(20,23,28,.7);backdrop-filter:blur(6px);display:flex;flex-direction:column}
+  .brand{display:flex;gap:12px;align-items:center;padding:18px 20px}
+  .mark{position:relative;width:28px;height:28px;border:1px solid var(--line2);background:var(--surface)}
+  .mark i{position:absolute;left:4px;right:4px;height:2px;background:var(--ink);opacity:.4}
+  .mark i:nth-child(1){top:6px;background:var(--accent);opacity:1}.mark i:nth-child(2){top:12px;opacity:.7}.mark i:nth-child(3){top:18px}
+  .brand b{display:block;font-size:15px;letter-spacing:-.01em}.brand small{display:block;margin-top:2px}
+  nav{display:flex;flex-direction:column;gap:2px;padding:16px 12px}
+  nav a{display:flex;gap:10px;align-items:center;padding:8px 12px;border-left:2px solid transparent;color:var(--muted);text-decoration:none;font-size:14px}
+  nav a:hover{background:rgba(26,30,37,.6);color:var(--ink)}
+  nav a.on{border-color:var(--accent);background:var(--raised);color:var(--ink)}
+  nav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .side-foot{margin-top:auto;border-top:1px solid var(--line);padding:16px 20px}
+  .side-foot .bal{font-size:20px;color:var(--accent);margin-top:4px}
+  .side-foot .who{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
+
+  main{max-width:1120px;margin:0 auto;padding:32px}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px}
+  h1{margin:4px 0 0;font-size:24px;letter-spacing:-.01em}
+  .sub{margin:4px 0 0;color:var(--muted);font-size:14px}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:2px;background:var(--raised);color:var(--ink);font-size:14px;font-weight:500;text-decoration:none;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .btn.sm{height:30px;padding:0 10px;font-size:13px}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+
+  .panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.35)}
+  .panel::before,.panel::after{content:"";position:absolute;width:10px;height:10px;border:0 solid var(--accent);pointer-events:none}
+  .panel::before{top:-1px;left:-1px;border-top-width:2px;border-left-width:2px}
+  .panel::after{right:-1px;bottom:-1px;border-right-width:2px;border-bottom-width:2px}
+  .panel.quiet::before,.panel.quiet::after{border-color:var(--line2)}
+  .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line)}
+  .ph h2{margin:2px 0 0;font-size:15px}
+  .pb{padding:16px 20px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .stat{padding:16px 20px}
+  .stat .v{font-size:28px;line-height:1;margin-top:8px;font-weight:500}
+  .stat .h{margin-top:8px;font-size:12px;color:var(--muted)}
+  .accent{color:var(--accent)} .teal{color:var(--teal)}
+
+  .grid2{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-top:16px}
+  .bars{display:grid;grid-template-columns:repeat(14,1fr);gap:6px;height:160px;align-items:end}
+  .bars div{background:rgba(255,180,0,.8)} .bars div:hover{background:var(--accent)}
+  .axis{display:grid;grid-template-columns:repeat(14,1fr);gap:6px;margin-top:8px;text-align:center;font-size:10px;color:var(--faint)}
+  .models li{list-style:none;margin-bottom:12px}.models{padding:0;margin:0}
+  .models .row{display:flex;justify-content:space-between;font-size:13px}.models .row code{font-size:13px}
+  .models .bar{height:4px;background:var(--raised);margin-top:4px}.models .bar i{display:block;height:100%;background:rgba(45,225,194,.7)}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border:1px solid var(--line2);border-radius:2px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+  .tag.ok{border-color:rgba(61,220,132,.55);color:var(--ok)} .tag.danger{border-color:rgba(255,92,92,.55);color:var(--danger)} .tag.accent{border-color:rgba(255,180,0,.55);color:var(--accent)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0} tbody tr:hover td{background:rgba(26,30,37,.7)}
+  .r{text-align:right} .mut{color:var(--muted)}
+  .ops{display:flex;gap:4px;justify-content:flex-end}.ops span{width:28px;height:28px;display:grid;place-items:center;border:1px solid transparent;border-radius:2px;color:var(--muted)}
+  .ops span:hover{border-color:var(--line2);color:var(--ink)}
+
+  pre{margin:0;padding:14px 16px;border:1px solid var(--line);border-radius:2px;background:var(--bg);font:13px/1.6 var(--mono);overflow:auto}
+  .k{color:var(--teal)} .s{color:var(--accent)}
+  .tabs{display:flex;gap:2px;margin-bottom:12px}.tabs span{padding:6px 12px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-bottom:0;border-radius:2px 2px 0 0}
+  .tabs span.on{color:var(--ink);background:var(--bg);border-color:var(--line2)}
+
+  footer{max-width:1120px;margin:0 auto;padding:0 32px 32px;font-size:12px;color:var(--faint)}
+  footer a{color:inherit}
+
+  .reveal{animation:rise .35s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*60ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.reveal{animation:none}}
+  @media (max-width:960px){.app{grid-template-columns:1fr}aside{position:static;height:auto}.stats{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}main{padding:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><span><b>transit</b><small class="label">api gateway</small></span></div>
+    <nav>
+      <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>概览</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.9 12.1 21 2M15 8l3 3M18 5l3 3"/></svg>密钥</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>用量</a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="1"/><path d="M2 10h20M16 15h2"/></svg>钱包</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2M19 8v6M16 11h6"/></svg>邀请</a>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>接入</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>账户</a>
+    </nav>
+    <div class="side-foot">
+      <div class="label">balance</div>
+      <div class="num bal">$42.184</div>
+      <div class="who"><span>XK</span><span class="label">friends ×1.0</span></div>
+    </div>
+  </aside>
+
+  <div>
+    <main>
+      <div class="head reveal">
+        <div><div class="label">overview</div><h1>XK，你好</h1><p class="sub">余额按上游官方价折算为美元额度显示，实际扣费 = 官方价 × 分组倍率。</p></div>
+        <div style="display:flex;gap:8px"><a class="btn primary" href="#">接入指南</a><a class="btn" href="#">管理密钥</a></div>
+      </div>
+
+      <div class="stats">
+        <div class="panel stat reveal" style="--i:1"><div class="label">balance</div><div class="num v accent">$42.184</div><div class="h">≈ ¥303.72</div></div>
+        <div class="panel stat reveal" style="--i:2"><div class="label">spent today</div><div class="num v">$1.862</div><div class="h">12 RPM · 38.2k TPM（最近一分钟）</div></div>
+        <div class="panel stat reveal" style="--i:3"><div class="label">spent total</div><div class="num v">$57.82</div><div class="h">1,284 次请求</div></div>
+        <div class="panel stat reveal" style="--i:4"><div class="label">group</div><div class="num v teal">friends</div><div class="h">倍率 ×1.0 · 成本价</div></div>
+      </div>
+
+      <div class="grid2">
+        <section class="panel reveal" style="--i:5">
+          <div class="ph"><div><div class="label">last 14 days</div><h2>每日消费</h2></div><span class="num mut" style="font-size:13px">合计 $23.41</span></div>
+          <div class="pb">
+            <div class="bars">
+              <div style="height:22%"></div><div style="height:35%"></div><div style="height:18%"></div><div style="height:60%"></div><div style="height:44%"></div><div style="height:8%"></div><div style="height:12%"></div>
+              <div style="height:71%"></div><div style="height:100%"></div><div style="height:52%"></div><div style="height:63%"></div><div style="height:30%"></div><div style="height:47%"></div><div style="height:39%"></div>
+            </div>
+            <div class="axis"><span>8/24</span><span></span><span>8/26</span><span></span><span>8/28</span><span></span><span>8/30</span><span></span><span>9/1</span><span></span><span>9/3</span><span></span><span>9/5</span><span></span></div>
+          </div>
+        </section>
+        <section class="panel reveal" style="--i:6">
+          <div class="ph"><div><div class="label">top models</div><h2>模型消费排行</h2></div></div>
+          <div class="pb"><ul class="models">
+            <li><div class="row"><code>claude-opus-4.7</code><span class="num mut">$31.20</span></div><div class="bar"><i style="width:100%"></i></div></li>
+            <li><div class="row"><code>gpt-5.5</code><span class="num mut">$14.62</span></div><div class="bar"><i style="width:47%"></i></div></li>
+            <li><div class="row"><code>claude-sonnet-4.6</code><span class="num mut">$8.10</span></div><div class="bar"><i style="width:26%"></i></div></li>
+            <li><div class="row"><code>gemini-3.1-pro</code><span class="num mut">$2.41</span></div><div class="bar"><i style="width:8%"></i></div></li>
+            <li><div class="row"><code>deepseek-v4</code><span class="num mut">$0.93</span></div><div class="bar"><i style="width:3%"></i></div></li>
+          </ul></div>
+        </section>
+      </div>
+
+      <section class="panel reveal" style="--i:7;margin-top:16px">
+        <div class="ph"><div><div class="label">api keys</div><h2>密钥</h2></div><a class="btn sm" href="#">+ 新建密钥</a></div>
+        <table>
+          <thead><tr><th>名称</th><th>密钥</th><th>状态</th><th class="r">剩余额度</th><th class="r">已用</th><th>过期</th><th>最近使用</th><th class="r">操作</th></tr></thead>
+          <tbody>
+            <tr><td><b>MacBook · Claude Code</b></td><td><code style="font-size:12px">sk-tr9k…8f2a</code></td><td><span class="tag ok">启用</span></td><td class="num r mut">不限</td><td class="num r mut">$23.10</td><td class="num mut">永不</td><td class="mut">3 分钟前</td><td><div class="ops"><span>⌘</span><span>⏻</span><span>✕</span></div></td></tr>
+            <tr><td><b>工作站 · Codex</b></td><td><code style="font-size:12px">sk-tr2c…41be</code></td><td><span class="tag ok">启用</span></td><td class="num r">$31.40</td><td class="num r mut">$18.60</td><td class="num mut">2026-12-31</td><td class="mut">昨天</td><td><div class="ops"><span>⌘</span><span>⏻</span><span>✕</span></div></td></tr>
+            <tr><td><b>批处理脚本</b></td><td><code style="font-size:12px">sk-trm7…c0d9</code></td><td><span class="tag danger">额度用尽</span></td><td class="num r">$0.00</td><td class="num r mut">$5.00</td><td class="num mut">2026-10-01</td><td class="mut">6 天前</td><td><div class="ops"><span>⌘</span><span>⏻</span><span>✕</span></div></td></tr>
+            <tr><td><b>Cherry Studio</b></td><td><code style="font-size:12px">sk-trx1…77aa</code></td><td><span class="tag">已禁用</span></td><td class="num r mut">不限</td><td class="num r mut">$0.42</td><td class="num mut">永不</td><td class="mut">12 天前</td><td><div class="ops"><span>⌘</span><span>⏻</span><span>✕</span></div></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel quiet reveal" style="--i:8;margin-top:16px">
+        <div class="ph"><div><div class="label">setup · MacBook · Claude Code</div><h2>接入配置</h2></div><a class="btn sm" href="#">复制</a></div>
+        <div class="pb">
+          <div class="tabs"><span class="on">Claude Code</span><span>Codex CLI</span><span>OpenAI SDK</span><span>Anthropic SDK</span><span>Cherry Studio</span></div>
+<pre><span class="mut">// ~/.claude/settings.json</span>
+{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.example.com"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k…8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>,
+    <span class="k">"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"</span>: <span class="s">"1"</span>
+  }
+}</pre>
+        </div>
+      </section>
+    </main>
+    <footer>transit · Powered by <a href="#">New API</a> <span class="num">v1.0.0-rc.33</span></footer>
+  </div>
+</div>
+</body>
+</html>

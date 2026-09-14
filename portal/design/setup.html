@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>接入 · transit</title>
+<link rel="stylesheet" href="bento.css">
+<style>
+  .tool-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tool-tab { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--border-subtle); background: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; color: var(--ink-sub); cursor: pointer; transition: all .16s var(--ease); }
+  .tool-tab:hover { color: var(--ink); }
+  .tool-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+  .tool-tab i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .code-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; color: var(--ink-tertiary); }
+  .code-head b { color: var(--ink); font-weight: 600; font-family: var(--font-mono); font-size: 12px; }
+  .tips { list-style: none; display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-sub); margin-top: 16px; }
+  .tips li { display: flex; gap: 8px; }
+  .tips li::before { content: "·"; color: var(--ink-tertiary); }
+  .key-pick { display: flex; align-items: center; gap: 10px; }
+  .code-view { white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  <aside>
+    <a class="brand" href="overview.html"><div class="brand-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><b>transit</b></a>
+    <nav>
+      <a href="overview.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>总览</a>
+      <a href="keys.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.9-8.9M15 8l2.5 2.5"/></svg>密钥</a>
+      <a href="usage.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>用量</a>
+      <a href="wallet.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>钱包</a>
+      <a href="invite.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>邀请</a>
+      <a href="setup.html" class="nav-link active"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>接入</a>
+      <a href="account.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>账户</a>
+    </nav>
+    <a class="user-badge" href="account.html"><div class="avatar">XK</div><div class="user-meta"><b>XK Studio</b><small>friends · 成本价结算</small></div></a>
+  </aside>
+
+  <main>
+    <header class="header rise">
+      <div>
+        <div class="sub-tag"><span>地址就是本站域名 · 直连，不需要 VPN</span></div>
+        <h1>接入</h1>
+        <p>选一把密钥、选你的工具，复制配置粘进去就能用。配置里已经把密钥和地址填好了。</p>
+      </div>
+      <div class="key-pick"><span class="tert" style="font-size:12.5px">使用密钥</span><select class="select" style="width: 320px;"><option>MacBook · Claude Code（sk-tr9k…8f2a）</option><option>工作站 · Codex（sk-tr2c…41be）</option><option>Cherry Studio（sk-trx1…77aa）</option></select></div>
+    </header>
+
+    <div class="tool-tabs rise" style="--i:1" data-seg="tool">
+      <button class="tool-tab active" data-show="cc"><i></i>Claude Code</button>
+      <button class="tool-tab" data-show="codex"><i></i>Codex CLI</button>
+      <button class="tool-tab" data-show="oai"><i></i>OpenAI SDK</button>
+      <button class="tool-tab" data-show="anth"><i></i>Anthropic SDK</button>
+      <button class="tool-tab" data-show="cherry"><i></i>Cherry Studio</button>
+      <button class="tool-tab" data-show="cline"><i></i>Cline / Cursor</button>
+    </div>
+
+    <div class="grid-split">
+      <div class="card static rise" style="--i:2">
+        <!-- Claude Code -->
+        <div data-pane="tool" data-id="cc">
+          <div class="code-head"><span>写入 <b>~/.claude/settings.json</b>（Windows：<b>%USERPROFILE%\.claude\settings.json</b>）</span><button class="copy-btn" data-copy="settings">复制</button></div>
+          <div class="code-view">{
+  <span class="k">"env"</span>: {
+    <span class="k">"ANTHROPIC_BASE_URL"</span>: <span class="s">"https://api.transit.local"</span>,
+    <span class="k">"ANTHROPIC_AUTH_TOKEN"</span>: <span class="s">"sk-tr9k2m8fd0a1b7c3e5f9g2h4j6k8l0m2n4p6q8r0s2t4u6v8w0x2y4z6a8f2a"</span>,
+    <span class="k">"API_TIMEOUT_MS"</span>: <span class="s">"3000000"</span>,
+    <span class="k">"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"</span>: <span class="s">"1"</span>
+  }
+}</div>
+          <ul class="tips">
+            <li><b>API_TIMEOUT_MS</b> 调大是为了长任务不掉线，保留这一行。</li>
+            <li>保存后重新打开 Claude Code，运行 <span class="mono-pill">/status</span> 能看到 Base URL 已切换。</li>
+            <li>模型用 <span class="mono-pill">claude-opus-4.7</span> / <span class="mono-pill">claude-sonnet-4.6</span>，与官方一致。</li>
+          </ul>
+        </div>
+
+        <!-- Codex -->
+        <div data-pane="tool" data-id="codex" hidden>
+          <div class="code-head"><span>写入 <b>~/.codex/config.toml</b></span><button class="copy-btn" data-copy="toml">复制</button></div>
+          <div class="code-view">model = <span class="s">"gpt-5.5"</span>
+model_provider = <span class="s">"transit"</span>
+
+[model_providers.transit]
+name = <span class="s">"transit"</span>
+base_url = <span class="s">"https://api.transit.local/v1"</span>
+env_key = <span class="s">"TRANSIT_API_KEY"</span>
+wire_api = <span class="s">"responses"</span></div>
+          <div class="code-head" style="margin-top: 14px;"><span>再设置环境变量</span><button class="copy-btn" data-copy="export">复制</button></div>
+          <div class="code-view"><span class="c"># macOS / Linux（写进 ~/.zshrc）</span>
+<span class="k">export</span> TRANSIT_API_KEY=<span class="s">"sk-tr2c…41be"</span>
+
+<span class="c"># Windows PowerShell</span>
+setx TRANSIT_API_KEY <span class="s">"sk-tr2c…41be"</span></div>
+        </div>
+
+        <!-- OpenAI SDK -->
+        <div data-pane="tool" data-id="oai" hidden>
+          <div class="code-head"><span>Python · <b>openai</b></span><button class="copy-btn" data-copy="py">复制</button></div>
+          <div class="code-view"><span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    base_url=<span class="s">"https://api.transit.local/v1"</span>,
+    api_key=<span class="s">"sk-tr9k…8f2a"</span>,
+)
+resp = client.chat.completions.create(
+    model=<span class="s">"gpt-5.5"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"hello"</span>}],
+)</div>
+          <div class="code-head" style="margin-top: 14px;"><span>Node.js · <b>openai</b></span><button class="copy-btn" data-copy="js">复制</button></div>
+          <div class="code-view"><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({ baseURL: <span class="s">"https://api.transit.local/v1"</span>, apiKey: <span class="s">"sk-tr9k…8f2a"</span> });</div>
+        </div>
+
+        <!-- Anthropic SDK -->
+        <div data-pane="tool" data-id="anth" hidden>
+          <div class="code-head"><span>Python · <b>anthropic</b></span><button class="copy-btn" data-copy="anth">复制</button></div>
+          <div class="code-view"><span class="k">from</span> anthropic <span class="k">import</span> Anthropic
+
+client = Anthropic(
+    base_url=<span class="s">"https://api.transit.local"</span>,
+    api_key=<span class="s">"sk-tr9k…8f2a"</span>,
+)</div>
+          <ul class="tips"><li>Anthropic SDK 的 base_url 不带 <span class="mono-pill">/v1</span>，SDK 会自己加。</li></ul>
+        </div>
+
+        <!-- Cherry Studio -->
+        <div data-pane="tool" data-id="cherry" hidden>
+          <div class="code-head"><span>设置 → 模型服务 → 添加提供商</span></div>
+          <ul class="kv">
+            <li><span class="k-label">提供商类型</span><span class="k-value">OpenAI</span></li>
+            <li><span class="k-label">API 地址</span><span class="k-value mono">https://api.transit.local</span></li>
+            <li><span class="k-label">API 密钥</span><span class="k-value mono">sk-trx1…77aa</span></li>
+            <li><span class="k-label">模型</span><span class="k-value">点「管理」拉取列表后勾选</span></li>
+          </ul>
+          <ul class="tips"><li>Cherry Studio 也支持 Anthropic 类型的提供商，用 Claude 时选它可以拿到原生思考过程。</li></ul>
+        </div>
+
+        <!-- Cline / Cursor -->
+        <div data-pane="tool" data-id="cline" hidden>
+          <div class="code-head"><span>OpenAI Compatible 提供商</span></div>
+          <ul class="kv">
+            <li><span class="k-label">Base URL</span><span class="k-value mono">https://api.transit.local/v1</span></li>
+            <li><span class="k-label">API Key</span><span class="k-value mono">sk-tr9k…8f2a</span></li>
+            <li><span class="k-label">Model ID</span><span class="k-value mono">claude-sonnet-4.6</span></li>
+          </ul>
+          <ul class="tips"><li>Cursor 需要关闭其他模型只保留自定义模型，否则会走 Cursor 自己的通道。</li></ul>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:14px; align-content:start;">
+        <div class="card rise" style="--i:3">
+          <div class="card-top" style="margin-bottom: 12px;"><div><div class="card-title">端点</div><div class="card-desc">三种协议原生支持，不做格式转换</div></div></div>
+          <ul class="kv">
+            <li><span class="k-label">Anthropic</span><span class="k-value mono">/v1/messages</span></li>
+            <li><span class="k-label">OpenAI Responses</span><span class="k-value mono">/v1/responses</span></li>
+            <li><span class="k-label">OpenAI Chat</span><span class="k-value mono">/v1/chat/completions</span></li>
+            <li><span class="k-label">模型列表</span><span class="k-value mono">/v1/models</span></li>
+          </ul>
+        </div>
+        <div class="card rise" style="--i:4">
+          <div class="card-top" style="margin-bottom: 12px;"><div><div class="card-title">验证连通</div><div class="card-desc">粘进终端跑一下</div></div></div>
+          <div class="code-view" style="font-size: 11.5px;">curl https://api.transit.local/v1/models \
+  -H <span class="s">"Authorization: Bearer sk-tr9k…8f2a"</span></div>
+          <div class="stat-sub" style="margin-top: 10px;">返回模型列表即为成功。</div>
+        </div>
+      </div>
+    </div>
+
+    <footer><span>transit · 零明文存储协议</span><span>Powered by <a href="#">New API</a></span></footer>
+  </main>
+</div>
+<script src="bento.js"></script>
+</body>
+</html>

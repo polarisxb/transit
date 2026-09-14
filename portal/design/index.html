@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>transit 门户 · 设计稿</title>
+<link rel="stylesheet" href="bento.css">
+<style>
+  .wrap { max-width: 860px; margin: 0 auto; padding: 56px 24px; position: relative; z-index: 1; }
+  .list { display: grid; gap: 10px; margin-top: 22px; }
+  .item { display: grid; grid-template-columns: 36px 1fr auto; gap: 14px; align-items: center; padding: 14px 18px; text-decoration: none; color: inherit; }
+  .item:hover { text-decoration: none; }
+  .item .n { font-family: var(--font-mono); font-size: 12px; color: var(--ink-tertiary); }
+  .item b { font-size: 14px; font-weight: 600; display: block; }
+  .item small { font-size: 12px; color: var(--ink-sub); }
+  .item .go { font-size: 12px; color: var(--accent); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="wrap">
+  <div class="sub-tag"><span class="dot-ping"></span><span>定型方向 · macOS Clean &amp; Industrial Bento</span></div>
+  <h1>transit 门户 · 全部页面稿</h1>
+  <p class="sub" style="margin-top:8px; font-size:14px;">共享 <span class="mono-pill">bento.css</span> / <span class="mono-pill">bento.js</span>，页面间的导航可以直接点击跳转。基准稿是 <a href="reference-bento-original.html">reference-bento-original.html</a>，之前的探索在 <span class="mono-pill">archive/</span>。</p>
+
+  <div class="list">
+    <a class="card item" href="overview.html"><span class="n">01</span><span><b>总览</b><small>基准稿内容，导航补齐为七项</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="sign-in.html"><span class="n">02</span><span><b>登录</b><small>两个状态并排：账号密码 / 两步验证</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="register.html"><span class="n">03</span><span><b>邀请注册</b><small>两个状态并排：带邀请码打开 / 无邀请码被拦</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="keys.html"><span class="n">04</span><span><b>密钥</b><small>列表 + 额度进度 + 新建密钥模态（默认展开，可关闭）</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="usage.html"><span class="n">05</span><span><b>用量</b><small>时间范围、类型过滤、逐笔记录、缓存命中标注、分页</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="wallet.html"><span class="n">06</span><span><b>钱包</b><small>余额与消耗节奏、兑换码充值、充值说明、充值记录</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="invite.html"><span class="n">07</span><span><b>邀请</b><small>邀请链接与二维码、已邀请列表、规则、可复制的介绍话术</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="setup.html"><span class="n">08</span><span><b>接入</b><small>选密钥、六种工具的配置、端点说明、连通性验证</small></span><span class="go">打开 ›</span></a>
+    <a class="card item" href="account.html"><span class="n">09</span><span><b>账户</b><small>资料、改密码、安全开关、登录设备、注销</small></span><span class="go">打开 ›</span></a>
+  </div>
+</div>
+</body>
+</html>

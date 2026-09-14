@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>邀请 · transit</title>
+<link rel="stylesheet" href="bento.css">
+<style>
+  .qr { width: 96px; height: 96px; border-radius: 12px; background:
+    repeating-linear-gradient(0deg, var(--ink) 0 4px, transparent 4px 8px),
+    repeating-linear-gradient(90deg, var(--ink) 0 4px, #fff 4px 8px); background-blend-mode: multiply; opacity: .85; flex-shrink: 0; }
+  .invitee { display: flex; align-items: center; gap: 10px; }
+  .invitee .avatar { width: 26px; height: 26px; font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  <aside>
+    <a class="brand" href="overview.html"><div class="brand-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><b>transit</b></a>
+    <nav>
+      <a href="overview.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>总览</a>
+      <a href="keys.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 8.9-8.9M15 8l2.5 2.5"/></svg>密钥</a>
+      <a href="usage.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>用量</a>
+      <a href="wallet.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>钱包</a>
+      <a href="invite.html" class="nav-link active"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/></svg>邀请</a>
+      <a href="setup.html" class="nav-link"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>接入</a>
+      <a href="account.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>账户</a>
+    </nav>
+    <a class="user-badge" href="account.html"><div class="avatar">XK</div><div class="user-meta"><b>XK Studio</b><small>friends · 成本价结算</small></div></a>
+  </aside>
+
+  <main>
+    <header class="header rise">
+      <div>
+        <div class="sub-tag"><span>本站仅限邀请注册 · 谁邀请的谁负责</span></div>
+        <h1>邀请</h1>
+        <p>把你的邀请链接发给信得过的朋友。链接里带着你的邀请码，对方打开就能注册，不需要手动输入。</p>
+      </div>
+    </header>
+
+    <div class="grid-split">
+      <div class="card rise" style="--i:1">
+        <div class="card-top" style="margin-bottom: 14px;"><div><div class="card-title">我的邀请链接</div><div class="card-desc">邀请码 <span class="mono" style="font-weight:600;color:var(--ink)">s3XR</span> · 长期有效</div></div></div>
+        <div style="display:flex; gap: 16px; align-items: center;">
+          <div class="qr" aria-hidden="true"></div>
+          <div style="flex:1; display:grid; gap: 10px;">
+            <div class="copy-field"><span>https://api.transit.local/register?aff=s3XR</span><button class="copy-btn" data-copy="https://api.transit.local/register?aff=s3XR">复制</button></div>
+            <div class="stat-sub">微信里直接发链接就行；二维码给当面扫的。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card rise" style="--i:2">
+        <div class="stat-label">已邀请</div>
+        <div class="stat-num" data-count="3">3</div>
+        <div class="stat-sub">3 人都在正常使用</div>
+        <div class="track" style="margin: 16px 0 8px;"><div class="track-bar" style="width: 60%;"></div></div>
+        <div class="stat-sub">邀请奖励待领取 <b style="color:var(--ink)" class="mono">$4.00</b> · <a href="#">转入余额</a></div>
+      </div>
+    </div>
+
+    <div class="card table-box rise" style="--i:3">
+      <div class="table-top"><div><div class="card-title">通过我注册的朋友</div><div class="card-desc">你能看到他们的活跃状态，看不到他们的用量明细</div></div></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>用户</th><th>注册时间</th><th>状态</th><th class="r">带来的奖励</th></tr></thead>
+        <tbody>
+          <tr><td><div class="invitee"><div class="avatar">AL</div><span style="font-weight:600">alice</span></div></td><td class="tert mono">2026-08-02</td><td><span class="badge-dot green">活跃 · 今天有调用</span></td><td class="r mono" style="font-weight:600">$2.00</td></tr>
+          <tr><td><div class="invitee"><div class="avatar">BO</div><span style="font-weight:600">bob</span></div></td><td class="tert mono">2026-08-19</td><td><span class="badge-dot green">活跃 · 2 天前</span></td><td class="r mono" style="font-weight:600">$2.00</td></tr>
+          <tr><td><div class="invitee"><div class="avatar">CY</div><span style="font-weight:600">cyan</span></div></td><td class="tert mono">2026-09-03</td><td><span class="badge-dot grey">注册未充值</span></td><td class="r mono tert">—</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 14px;">
+      <div class="card rise" style="--i:4">
+        <div class="card-top" style="margin-bottom: 12px;"><div><div class="card-title">邀请规则</div></div></div>
+        <ul class="guide-flow">
+          <li class="flow-step"><span class="step-num">1</span><div class="step-content"><b>只邀请信得过的人</b><p>本站是朋友间的私人网关，谁邀请的谁对这个人负责。</p></div></li>
+          <li class="flow-step"><span class="step-num">2</span><div class="step-content"><b>邀请码即准入</b><p>没有邀请码无法注册；你邀请的朋友也会得到自己的邀请码。</p></div></li>
+          <li class="flow-step"><span class="step-num">3</span><div class="step-content"><b>小额奖励</b><p>朋友首次充值后，你获得 $2.00 额度，可随时转入余额。</p></div></li>
+        </ul>
+      </div>
+      <div class="card rise" style="--i:5">
+        <div class="card-top" style="margin-bottom: 12px;"><div><div class="card-title">发给朋友的话</div><div class="card-desc">复制就能用</div></div></div>
+        <div class="code-view" style="white-space: pre-wrap; font-family: var(--font); font-size: 13px; line-height: 1.7;">我搭了个私人的 AI API 网关，Claude Code / Codex / Cherry Studio 都能直连，不用 VPN，按官方成本价算钱。
+你从这个链接注册：https://api.transit.local/register?aff=s3XR
+注册完到「接入」页复制配置粘进工具就能用了。</div>
+        <div style="display:flex; justify-content:flex-end; margin-top: 10px;"><button class="copy-btn" data-copy="我搭了个私人的 AI API 网关…">复制这段话</button></div>
+      </div>
+    </div>
+
+    <footer><span>transit · 零明文存储协议</span><span>Powered by <a href="#">New API</a></span></footer>
+  </main>
+</div>
+<script src="bento.js"></script>
+</body>
+</html>
